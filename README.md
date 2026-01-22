@@ -10,6 +10,10 @@ Here is the current list of sites that have either historic or ongoing temperatu
 
 [FWRI-Sites-with-Temperature-Data.pdf](https://github.com/user-attachments/files/24807796/temperature-table.pdf)
 
-## Units:
-Temperature is recorded in degrees Celsius (°C)
+## Metadata:
+
+| **Variable**                                | **Unit**                                                                 | **Description**
+|-----------------------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| Temperature              | Degrees Celsius(°C)                                                                         | Recorded via autonomous devices placed on site that sample once per hour. Devices are removed off site when data is collected, and immediately replaced with another to prevent gaps in sampling. Collection occurs twice yearly: summer and winter.
+
 
