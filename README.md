@@ -14,6 +14,9 @@ Here is the current list of sites that have either historic or ongoing temperatu
 
 | **Variable**                                | **Unit**                                                                 | **Description**
 |-----------------------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| Temperature              | Degrees Celsius(°C)                                                                         | Recorded via autonomous devices placed on site that sample once per hour. Devices are removed off site when data is collected, and immediately replaced with another to prevent gaps in sampling. Collection occurs twice yearly: summer and winter.
+| Observation_ID             | Integer                                                                        | Unique identifier for each individual observation that is recorded 
+| Site_ID             | Integer                                                                        | A unique indentifier assigned to each of the survey sites. The ID series is consistent through the Florida Key sites, Southeast Florida sites, and Dry Tortugas National Park.
+| Temp C             | Degrees Celsius (°C)                                                                         | Recorded via autonomous devices placed on site that sample once per hour. Devices are removed off site when data is collected, and immediately replaced with another to prevent gaps in sampling. Devices are read through HoboWare, and results are saved as .xls or .csv files|
+| Temp F             | Degrees Fahrenheit (°F) | Converted from the recorded temperature in Celsius|
 
 
