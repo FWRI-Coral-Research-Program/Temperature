@@ -1,0 +1,67 @@
+---
+title: "Dry_Tortugas_Temp_2019-2021"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Dry Tortugas National Park
+
+### Author- Madison Enda, January 26th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script we will be cleaning and joining the temperature data csv files from Dry Tortugas National Park from 2019, 2020, and 2021. This data was pulled from the FWRI Coral Research Program's shared temperature data drive, and are master files compiled from the individual site csv files for those years.They will be cleaned, joined, and then added to the 'dry_tortugas_master_2025.csv'. The final master file will be added to the new 2026 database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folder was downloaded manually to my device, and thus my file path is unique to my device.
+
+- This workflow will include general cleaning (standardizing naming conventions, removing superfluous data, etc.) and the final result will be uploaded to the shared drive once again, until permissions are received to migrate to a new platform.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, purrr, hms)
+```
+
+## Load in the csv files from 2019-2021
+
+```{r}
+# Set folder path to where the csv files are on my local device
+folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update"
+
+# Read CSVs by combining the folder path and file name
+temp_dt_2019 <- read_csv(file.path(folder_path, "DT_Temperature_18-19.csv"))
+temp_dt_2020 <- read_csv(file.path(folder_path, "2020_DT_temperature.csv"))
+temp_dt_2021 <- read_csv(file.path(folder_path, "DT_Temperature_2021.csv"))
+```
+
+# Investigate data: determine columns, incongruity, etc.
+
+```{r}
+# View the first few rows
+colnames(temp_dt_2019)
+colnames(temp_dt_2020)
+colnames(temp_dt_2021)
+```
+- It seems as though the 2020 and 2021 data started having observation_id (or some kind of id) added as a column already. Let's drop those columns so we can recalculate it later.
+
+```{r}
+# Remove the ID column from both data frames (2020 and 2021)
+temp_dt_2020 <- temp_dt_2020 %>% select(-ID)
+temp_dt_2021 <- temp_dt_2021 %>% select(-ID)
+```
+
+- Now we can join all three of these data frames together and begin cleaning again
+
+```{r}
+# Bind all three together to begin cleaning using dplyr:bind_rows
+combined_temp <- bind_rows(temp_dt_2019, temp_dt_2020, temp_dt_2021)
+```
+
+
+# 
+
