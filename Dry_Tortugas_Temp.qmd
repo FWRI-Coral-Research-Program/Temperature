@@ -3,6 +3,10 @@ title: "Dry_Tortugas_Temp"
 author: "Maddy Enda"
 date: 01/26/2026
 format: html
+execute: 
+  echo: false
+  eval: false
+  warning: false
 editor: visual
 ---
 
@@ -28,7 +32,7 @@ editor: visual
 # install.packages("librarian")
 
 # Using librarian::shelf to import many libraries at once
-librarian::shelf(tidyverse, dplyr, here, readxl, purrr)
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms)
 ```
 
 
@@ -47,6 +51,91 @@ file_list <- list.files(path = folder_path, pattern = "\\.xlsx$", full.names = T
 ```{r}
 # Use the purrr package to apply read_excel to all files
 df_list <- purrr::map(file_list, read_excel)
+
+# Combine using bind_rows since same columns exist
+combined_temp <- bind_rows(df_list)
+```
+
+
+## View the combined data frame
+
+```{r}
+# Get some stats about our new data frame:
+
+# Number of columns and number of rows
+cat("Rows:", nrow(combined_temp), "Columns:", ncol(combined_temp), "\n")
+
+# Take a look at the bottom of the df
+tail(combined_temp)
+```
+
+# Ensure all columns have data in correct type and format
+
+```{r}
+# Use str to inspect the column name, type, and format
+str(combined_temp)
+```
+- Here we can see that site_id, Date, and Time need to be converted before we move forward, because:
+1.) Date is currently in date + time format, but there is not time recorded in this column
+2.) Time is simply a number, and being recorded in decimal foramt which uses more memory
+3.) siteid is being recorded as a decimal, which uses more memory
+
+
+# Converting to proper date format
+
+```{r}
+# Use as.Date on the Date column to convert 
+combined_temp$Date <- as.Date(combined_temp$Date)
+
+# Specify format of date as "yyyy-mm-dd", or 2006-09-15
+format(combined_temp$Date,"%Y-%m-%d")
+```
+
+# Converting to hours, mins, secs in military time
+
+```{r}
+# Convert to integer before applying time
+combined_temp$Time <- as.integer(combined_temp$Time)
+
+# Convert the integer to a hour
+combined_temp$Time <- hms::hms(hours = combined_temp$Time)
+```
+
+# Converting site_id to integer
+
+```{r}
+# Set the siteid column as an integer
+combined_temp$siteid <- as.integer(combined_temp$siteid)
+```
+
+
+# Ensure we have no missing data or other such issues
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(combined_temp))
+```
+- It seems we have three NA values in Temp F for some reason, so I will find them and fill them with the appropriate value converting from Fahrenheit
+
+
+# Find which rows have the NA values
+
+```{r}
+# Identify the missing rows and confirm if Temp C has data
+missing_temp_F <- combined_temp %>%
+  filter(is.na(`Temp F`))
+
+# Since Temp C has data for all three of these observations (all Palmata Patch in 2016 a couple hours apart), we will use case_when to replace the NA values with the correct temp in Fahrenheit converting from the Celsius value
+combined_temp <- combined_temp %>%
+  mutate(
+    `Temp F` = case_when(
+      is.na(`Temp F`) ~ `Temp C` * 1.8 + 32,
+      TRUE            ~ `Temp F`
+    )
+  )
+
+# Check again to see if we have any NA values
+colSums(is.na(combined_temp))
 ```
 
 
