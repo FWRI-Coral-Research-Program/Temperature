@@ -13,9 +13,9 @@ editor: visual
 
 ## Overview:
 
-- In this script, we will be combining the site specific temperature data sets from each year from 2022-2025 into master lists, aggregating them into a combined csv, and appending that to the dry_tortugas_master_2025.csv.
+-   In this script, we will be combining the site specific temperature data sets from each year from 2022-2025 into master lists, aggregating them into a combined csv, and appending that to the dry_tortugas_master_2025.csv.
 
-- This data was pulled from the FWRI Coral Research Program's shared temperature data drive, and contain temperature data from the individual sites for each year, recorded once every hour.The final master file will be added to the new 2026 database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folders were downloaded manually to my device, and thus my file path is unique to my device.
+-   This data was pulled from the FWRI Coral Research Program's shared temperature data drive, and contain temperature data from the individual sites for each year, recorded once every hour.The final master file will be added to the new 2026 database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folders were downloaded manually to my device, and thus my file path is unique to my device.
 
 ## Import Libraries
 
@@ -29,7 +29,7 @@ librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate)
 
 # Load in the csv files for each year, creating master files
 
-- We will be loading the files in as individual years first, to see if they have the same columns, before attempting a join of all years
+-   We will be loading the files in as individual years first, to see if they have the same columns, before attempting a join of all years
 
 ```{r}
 # Using my local path, unpack all the files and read them in as a single csv per year
@@ -62,7 +62,7 @@ dt_temp_2025 <- list.files(
   map_dfr(read_csv)
 ```
 
-- It unfortunately appears as though these files have many more columns than the old data. However, after running head() on the data sets, it seems like most of them have NA values in these columns. I will perform some basic analysis to check
+-   It unfortunately appears as though these files have many more columns than the old data. However, after running head() on the data sets, it seems like most of them have NA values in these columns. I will perform some basic analysis to check
 
 ## Simple Investigation
 
@@ -70,24 +70,27 @@ dt_temp_2025 <- list.files(
 # Checking the column names in 2022 (which has 1 more than the others)
 colnames(dt_temp_2022)
 ```
-- It looks like a single row may have been added as other columns? I'm not quite sure, but I'll keep looking
+
+-   It looks like a single row may have been added as other columns? I'm not quite sure, but I'll keep looking
 
 ```{r}
 # Checking the column names of each set individually
 colnames(dt_temp_2023)
 ```
 
-- This one is extremely confusing. It seems as though each "title" was a column, and all the data simply saved into the first column for each observation? Not quite sure how this occurred.
+-   This one is extremely confusing. It seems as though each "title" was a column, and all the data simply saved into the first column for each observation? Not quite sure how this occurred.
 
 ```{r}
 # Checking the column names of each set individually
 colnames(dt_temp_2024)
 ```
+
 ```{r}
 # Checking the column names of each set individually
 colnames(dt_temp_2025)
 ```
-- Since 2023-2025 are in such strange formats, I'm going to load in one csv to check what each site looks like.
+
+-   Since 2023-2025 are in such strange formats, I'm going to load in one csv to check what each site looks like.
 
 ```{r}
 # Specify file path of one csv file 
@@ -97,8 +100,7 @@ folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/2023"
 test_csv <- read_csv(file.path(folder_path, "BirdKey_Off1_22-23.csv"))
 ```
 
-- It looks like each file has all of the data condensed into one column, but not all data is separated by commas or semicolons. I will have to format them as I load them into a list, and then combine them into a single df. I will likely have to do additional cleaning afterwards as a result of the lack of delimiters. 
-
+-   It looks like each file has all of the data condensed into one column, but not all data is separated by commas or semicolons. I will have to format them as I load them into a list, and then combine them into a single df. I will likely have to do additional cleaning afterwards as a result of the lack of delimiters.
 
 ## Begin cleaning the 2023-2025 csv files
 
@@ -139,7 +141,7 @@ files <- list.files(
 dt_temp_2023 <- map_dfr(files, fix_csv)
 ```
 
-- Ok, this strategy at least separates our observation_id, date-time, and temperature. All I need to do now is delete some rows, rename the columns, and separate some data
+-   Ok, this strategy at least separates our observation_id, date-time, and temperature. All I need to do now is delete some rows, rename the columns, and separate some data
 
 ```{r}
 # Remove the first two rows
@@ -159,7 +161,7 @@ dt_temp_2023 <- dt_temp_2023 %>%
   )
 ```
 
-- Alright, now we have some of the data we need in the right columns. I will separate the time columns, and check for NAs.
+-   Alright, now we have some of the data we need in the right columns. I will separate the time columns, and check for NAs.
 
 ```{r}
 # We will separate the dates out into date and time
@@ -170,7 +172,16 @@ dt_temp_2023 <- dt_temp_2023 %>%
 ## Check for NAs and remove extra data
 
 ```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(dt_temp_2023))
 
+# We will remove all 10 rows that have no temperature data (NA or empty)
+dt_temp_2023 <- dt_temp_2023 %>%
+  filter(!is.na(temp_F) & temp_F != "")
 ```
 
+-   Great! Now we don't have any NA or missing values. Let's check now for any other strange inputs by looking at tail() on our dataset
 
+```{r}
+
+```
