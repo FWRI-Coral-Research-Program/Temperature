@@ -103,6 +103,7 @@ combined_temp$Siteid <- as.integer(combined_temp$Siteid)
 # Use str to inspect the column name, types, etc.
 str(combined_temp)
 ```
+
 ## Ensure we have no missing data or other such issues
 
 ```{r}
@@ -115,7 +116,8 @@ colSums(is.na(combined_temp))
 max(combined_temp$`Temp F`)
 min(combined_temp$`Temp F`)
 ```
-- It seems as though we have no NA values across our data, which is awesome! However, we do need to trim some of this data, so I will be taking a look at values above 92 degrees this time (where are extraneous values fell last time)
+
+-   It seems as though we have no NA values across our data, which is awesome! However, we do need to trim some of this data, so I will be taking a look at values above 92 degrees this time (where are extraneous values fell last time)
 
 ```{r}
 # Take the rows where the Temp F column has values higher than 101 degrees
@@ -123,7 +125,7 @@ high_temp_rows <- combined_temp %>%
   filter(`Temp F` > 92)
 ```
 
-- Once again, these values are mostly from the same time period (September of 2018, all within a 24 hour period), and are likely the result of changing sensors and leaving them on while they remained on the hot deck of the boat, or enclosed in a heated or insulated location.  I will remove these values from the data as well.
+-   Once again, these values are mostly from the same time period (September of 2018, all within a 24 hour period), and are likely the result of changing sensors and leaving them on while they remained on the hot deck of the boat, or enclosed in a heated or insulated location. I will remove these values from the data as well.
 
 ```{r}
 # Remove extraneous values
@@ -183,7 +185,8 @@ colSums(is.na(dry_tortugas_master_2025))
 max(dry_tortugas_master_2025$temp_F)
 min(dry_tortugas_master_2025$temp_F)
 ```
-- Somehow the data types of site_id and observation_id changed to numeric, and need to be changed back to integer
+
+-   Somehow the data types of site_id and observation_id changed to numeric, and need to be changed back to integer
 
 ```{r}
 # Set the siteid column as an integer
@@ -200,9 +203,6 @@ dry_tortugas_master_2025$observation_id <- as.integer(dry_tortugas_master_2025$o
 write.csv(dry_tortugas_master_2025, "dry_tortugas_master_2025.csv", row.names = FALSE)
 ```
 
-
 # Wrap Up:
 
-- The Dry Tortugas National Park temperature dataset is now complete from 2006-2021. Our next step is to combine the individual csv files for the years 2022, 2023, 2024, and 2025; creating master lists for all the remaining years to be appended to the dry_tortugas_master_2025.csv
-
-
+-   The Dry Tortugas National Park temperature dataset is now complete from 2006-2021. Our next step is to combine the individual csv files for the years 2022, 2023, 2024, and 2025; creating master lists for all the remaining years to be appended to the dry_tortugas_master_2025.csv

@@ -1,0 +1,176 @@
+---
+title: "Dry_Tortugas_Temp_2022-2025"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Dry Tortugas National Park
+
+### Author- Madison Enda, January 26th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+- In this script, we will be combining the site specific temperature data sets from each year from 2022-2025 into master lists, aggregating them into a combined csv, and appending that to the dry_tortugas_master_2025.csv.
+
+- This data was pulled from the FWRI Coral Research Program's shared temperature data drive, and contain temperature data from the individual sites for each year, recorded once every hour.The final master file will be added to the new 2026 database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folders were downloaded manually to my device, and thus my file path is unique to my device.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate)
+```
+
+# Load in the csv files for each year, creating master files
+
+- We will be loading the files in as individual years first, to see if they have the same columns, before attempting a join of all years
+
+```{r}
+# Using my local path, unpack all the files and read them in as a single csv per year
+dt_temp_2022 <- list.files(
+  path = "C:/Users/Madison.enda/Desktop/Temp_Data/trimmed", # The 2022 file was called "trimmed" in drive
+  pattern = "\\.csv$",
+  full.names = TRUE
+) %>%
+  map_dfr(read_csv)
+
+dt_temp_2023 <- list.files(
+  path = "C:/Users/Madison.enda/Desktop/Temp_Data/2023",
+  pattern = "\\.csv$",
+  full.names = TRUE
+) %>%
+  map_dfr(read_csv)
+
+dt_temp_2024 <- list.files(
+  path = "C:/Users/Madison.enda/Desktop/Temp_Data/2024",
+  pattern = "\\.csv$",
+  full.names = TRUE
+) %>%
+  map_dfr(read_csv)
+
+dt_temp_2025 <- list.files(
+  path = "C:/Users/Madison.enda/Desktop/Temp_Data/DT", # The 2025 file was called "DT" in drive
+  pattern = "\\.csv$",
+  full.names = TRUE
+) %>%
+  map_dfr(read_csv)
+```
+
+- It unfortunately appears as though these files have many more columns than the old data. However, after running head() on the data sets, it seems like most of them have NA values in these columns. I will perform some basic analysis to check
+
+## Simple Investigation
+
+```{r}
+# Checking the column names in 2022 (which has 1 more than the others)
+colnames(dt_temp_2022)
+```
+- It looks like a single row may have been added as other columns? I'm not quite sure, but I'll keep looking
+
+```{r}
+# Checking the column names of each set individually
+colnames(dt_temp_2023)
+```
+
+- This one is extremely confusing. It seems as though each "title" was a column, and all the data simply saved into the first column for each observation? Not quite sure how this occurred.
+
+```{r}
+# Checking the column names of each set individually
+colnames(dt_temp_2024)
+```
+```{r}
+# Checking the column names of each set individually
+colnames(dt_temp_2025)
+```
+- Since 2023-2025 are in such strange formats, I'm going to load in one csv to check what each site looks like.
+
+```{r}
+# Specify file path of one csv file 
+folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/2023"
+
+# Read CSVs by combining the folder path and file name
+test_csv <- read_csv(file.path(folder_path, "BirdKey_Off1_22-23.csv"))
+```
+
+- It looks like each file has all of the data condensed into one column, but not all data is separated by commas or semicolons. I will have to format them as I load them into a list, and then combine them into a single df. I will likely have to do additional cleaning afterwards as a result of the lack of delimiters. 
+
+
+## Begin cleaning the 2023-2025 csv files
+
+```{r}
+# Attempt to clean the 2023 file into 6 columns
+
+# Function to fix a single malformed CSV
+fix_csv <- function(file_path, n_cols = 6, sep = ",") {
+
+  df <- read_csv(
+    file_path,
+    col_names = FALSE,
+    show_col_types = FALSE
+  )
+
+  names(df) <- "raw_data"
+
+  df %>%
+    separate(
+      col = raw_data,
+      into = paste0("col", 1:n_cols),
+      sep = sep,
+      fill = "right",
+      extra = "drop",
+      convert = TRUE
+    ) %>%
+    mutate(source_file = basename(file_path))
+}
+
+# Get all CSV files in the folder
+files <- list.files(
+  path = "C:/Users/Madison.enda/Desktop/Temp_Data/2023",
+  pattern = "\\.csv$",
+  full.names = TRUE
+)
+
+# Fix each CSV, then combine into one data frame
+dt_temp_2023 <- map_dfr(files, fix_csv)
+```
+
+- Ok, this strategy at least separates our observation_id, date-time, and temperature. All I need to do now is delete some rows, rename the columns, and separate some data
+
+```{r}
+# Remove the first two rows
+dt_temp_2023 <- dt_temp_2023 %>% 
+  slice(-(1:2))
+
+# Drop extra columns
+dt_temp_2023 <- dt_temp_2023 %>% 
+  select(-c(col4, col5, col6, source_file))
+
+# Rename columns
+dt_temp_2023 <- dt_temp_2023 %>%
+  rename(
+    observation_id = col1,
+    date = col2,
+    temp_F = col3
+  )
+```
+
+- Alright, now we have some of the data we need in the right columns. I will separate the time columns, and check for NAs.
+
+```{r}
+# We will separate the dates out into date and time
+dt_temp_2023 <- dt_temp_2023 %>%
+  separate(date, into = c("date", "time"), sep = " ")
+```
+
+## Check for NAs and remove extra data
+
+```{r}
+
+```
+
+
