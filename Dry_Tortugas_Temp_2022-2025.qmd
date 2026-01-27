@@ -141,15 +141,16 @@ files <- list.files(
 dt_temp_2023 <- map_dfr(files, fix_csv)
 ```
 
-- We need a Site Name to add to this data, so I need to see how many sites are in the source_file column to determine which site names need to replace the abbreviations
+-   We need a Site Name to add to this data, so I need to see how many sites are in the source_file column to determine which site names need to replace the abbreviations
 
 ```{r}
 # Use unique() to determine the different file names
 unique(dt_temp_2023$source_file)
 ```
-- Ok, this strategy at least separates our observation_id, date-time, and temperature. All I need to do now is delete some rows, rename the columns, and separate some data
 
-- To ensure that I am using the correct column names, I will import the dry_tortugas_master_2025.csv and look at the unique values there as well
+-   Ok, this strategy at least separates our observation_id, date-time, and temperature. All I need to do now is delete some rows, rename the columns, and separate some data
+
+-   To ensure that I am using the correct column names, I will import the dry_tortugas_master_2025.csv and look at the unique values there as well
 
 ```{r}
 # Import the dry_tortugas_master_2025.csv
@@ -158,7 +159,8 @@ unique(dt_temp_2023$source_file)
 # Look at the unique values in that column
 unique(dry_tortugas_master_2025$site_name)
 ```
-- There seems to be quite a few typos, which we will fix once all years have been added together, but for now we are gonna stick to correct spellings, and use that for our case_when() to change the file names into site names
+
+-   There seems to be quite a few typos, which we will fix once all years have been added together, but for now we are gonna stick to correct spellings, and use that for our case_when() to change the file names into site names
 
 ```{r}
 # Remove the first two rows
@@ -222,7 +224,7 @@ dt_2023_errors <- dt_temp_2023 %>%
   filter(grepl("[^0-9]", observation_id))
 ```
 
-- This shows us that we have 10 rows with # as the input, and these need to be removed as well
+-   This shows us that we have 10 rows with \# as the input, and these need to be removed as well
 
 ```{r}
 # Remove the # observations in the observation_id column (10 rows)
@@ -230,7 +232,7 @@ dt_temp_2023 <- dt_temp_2023 %>%
   filter(!grepl("[^0-9]", observation_id))
 ```
 
-- Lastly, before our final check, we will add a temp_C columns
+-   Lastly, before our final check, we will add a temp_C columns
 
 ```{r}
 # Create the temperature column in Celsius
@@ -245,43 +247,6 @@ dt_temp_2023 <- dt_temp_2023 %>%
 # Find the sum of all NA values in each column
 colSums(is.na(dt_temp_2023))
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Apply previous steps to 2024 & 2025 data
 
@@ -371,7 +336,6 @@ dt_temp_2024 <- dt_temp_2024 %>%
   mutate(temp_F = as.numeric(temp_F),
          temp_C = (temp_F - 32) / 1.8)
 ```
-
 
 ```{r}
 # Fix the 2025 data
@@ -486,7 +450,7 @@ dt_temp_2022 <- dt_temp_2022 %>%
   mutate(observation_id = row_number()) # oldest value gets ID = 1
 ```
 
-_ Next, we will create an observation_id column, look for NAs, and anomalous values
+\_ Next, we will create an observation_id column, look for NAs, and anomalous values
 
 ```{r}
 # Find the sum of all NA values in each column
@@ -497,7 +461,7 @@ dt_2022_NAs <- dt_temp_2022 %>%
   filter(is.na(temp_C))
 ```
 
-- These columns are just all NA all across. There is no evidence of date's or where it came from, so they must be removed.
+-   These columns are just all NA all across. There is no evidence of date's or where it came from, so they must be removed.
 
 ```{r}
 # Remove all rows that had NAs in them
@@ -508,22 +472,41 @@ dt_temp_2022 <- dt_temp_2022 %>%
 colSums(is.na(dt_temp_2022))
 ```
 
-
 ## Begin joining data!
 
-- We can finally start joining this data! We will begin by creating a site_id table from the 2022 data that will be used to fill in the missing info in the 2023 to 2025 data.
+-   We can finally start joining this data! We will begin by creating a site_id table from the 2022 data that will be used to fill in the missing info in the 2023 to 2025 data.
 
 ```{r}
-# Make a lookup table of site_name -> site_id
-site_lookup <- dt_temp_2022 %>%
-  select(site_name, site_id) %>%
-  distinct()  # just in case
-
-# Join to create a site_id column
-dt_temp_2023 <- dt_temp_2023 %>% left_join(site_lookup, by = "site_name")
-dt_temp_2024 <- dt_temp_2024 %>% left_join(site_lookup, by = "site_name")
-dt_temp_2025 <- dt_temp_2025 %>% left_join(site_lookup, by = "site_name")
+# Combine the 2022-2025 data
+dt_temp_2023_2025 <- bind_rows(dt_temp_2023, dt_temp_2024, dt_temp_2025)
 ```
 
+-   Next, we will check the data type of this data against the 2022 temp data
 
+```{r}
+# Check data types
+str(dt_temp_2023_2025)
+```
 
+```{r}
+# Check NAs or oddities
+colSums(is.na(dt_temp_2023_2025))
+```
+
+-   Ok, time to type our data following the 2006-2021 conventions!
+
+```{r}
+# Formatting the data set:
+
+# Use as.Date on the Date column to convert 
+dt_temp_2023_2025$date <- mdy(dt_temp_2023_2025$date)
+
+# Convert to integer before applying time
+dt_temp_2023_2025$time <- as.integer(dt_temp_2023_2025$time)
+
+# Convert the integer to a hour
+combined_temp$Time <- hms::hms(hours = combined_temp$Time)
+
+# Set the siteid column as an integer
+dt_temp_2023_2025$site_id <- as.integer(dt_temp_2023_2025$site_id)
+```
