@@ -181,7 +181,7 @@ filtered_temp <- filtered_temp %>%
 ## Cleaning Names & Exporting
 
 ```{r}
-# Rename old columns to be snake case (`Temp C` to Temp_C), and use camel case  
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
 dry_tortugas_master_2026 <- filtered_temp %>%
   rename(
     observation_id = Observation_ID,

@@ -143,7 +143,7 @@ filtered_temp <- filtered_temp %>%
 ## Cleaning Names & Exporting
 
 ```{r}
-# Rename old columns to be snake case (`Temp C` to Temp_C), and use camel case  
+# Rename old columns to be snake case (`Temp C` to Temp_C)
 dt_2019_2021 <- filtered_temp %>%
   rename(
     observation_id = Observation_ID,
@@ -155,4 +155,54 @@ dt_2019_2021 <- filtered_temp %>%
     temp_F = `Temp F`
   )
 ```
+
+## Read in the master list csv with data from 2006-2018
+
+```{r}
+# Read in the csv saved to my current working directory (view the Dry_Tortugas_Temp_2006-2018.qmd)
+dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
+```
+
+## Combine the master list with the 2019-2021 data
+
+```{r}
+# Combine the master list and 2019-2021 data using dplyr::bind_rows() to preserve columns
+dry_tortugas_master_2025 <- bind_rows(dry_tortugas_master_2025, dt_2019_2021)
+```
+
+## Check to see if merge went smoothly: look for NAs, data types changes, etc.
+
+```{r}
+# Check data types
+str(dry_tortugas_master_2025)
+
+# Find the sum of all NA values in each column
+colSums(is.na(dry_tortugas_master_2025))
+
+# Check to see if the highest and lowest temps make sense
+max(dry_tortugas_master_2025$temp_F)
+min(dry_tortugas_master_2025$temp_F)
+```
+- Somehow the data types of site_id and observation_id changed to numeric, and need to be changed back to integer
+
+```{r}
+# Set the siteid column as an integer
+dry_tortugas_master_2025$site_id <- as.integer(dry_tortugas_master_2025$site_id)
+
+# Set the siteid column as an integer
+dry_tortugas_master_2025$observation_id <- as.integer(dry_tortugas_master_2025$observation_id)
+```
+
+## Save final product as csv
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(dry_tortugas_master_2025, "dry_tortugas_master_2025.csv", row.names = FALSE)
+```
+
+
+# Wrap Up:
+
+- The Dry Tortugas National Park temperature dataset is now complete from 2006-2021. Our next step is to combine the individual csv files for the years 2022, 2023, 2024, and 2025; creating master lists for all the remaining years to be appended to the dry_tortugas_master_2025.csv
+
 
