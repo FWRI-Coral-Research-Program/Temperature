@@ -14,14 +14,12 @@ Here is the current list of sites that have either historic or ongoing temperatu
 
 | **Variable**                                | **Unit**                                                                 | **Description**
 |-----------------------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| Observation_ID             | Integer                                                                        | Unique identifier for each individual observation that is recorded |
-| Date               | mm/dd/yyy       | The date the measurement was recorded on site |
-| Time               | Military standard time by hour      | The hour of that specific day that this observation was recorded |
-| Site_ID             | Integer                                                                        | A unique indentifier assigned to each of the survey sites. The ID series is consistent through the Florida Key sites, Southeast Florida sites, and Dry Tortugas National Park. |
-| Site_Name              | Text       | The name of the location where the surveys occur and where sensors are located (survey sites) |
-| Temp C             | Degrees Celsius (°C)                                                                         | Recorded via autonomous devices placed on site that sample once per hour. Devices are removed off site when data is collected, and immediately replaced with another to prevent gaps in sampling. Devices are read through HoboWare, and results are saved as .xls or .csv files|
-| Temp F             | Degrees Fahrenheit (°F) | Converted from the recorded temperature in Celsius|
-| Region      | An acronymn representing a region surveyed by FWRI | The project region where this particular survey occurred in the Florida Keys: the lower keys (LK), middle keys (MK), upper keys (UK), or Dry Tortugas National Park (DT)|
-
+| observation_id             | Integer                                                                        | Unique identifier for each individual observation that is recorded |
+| date               | mm/dd/yyy       | The date the measurement was recorded on site |
+| time               | Military standard time by hour      | The hour of that specific day that this observation was recorded |
+| site_id             | Integer                                                                        | A unique indentifier assigned to each of the survey sites. The ID series is consistent through the Florida Key sites, Southeast Florida sites, and Dry Tortugas National Park. |
+| site_name              | Text       | The name of the location where the surveys occur and where sensors are located (survey sites) |
+| temp_C             | Degrees Celsius (°C)                                                                         | Recorded via autonomous devices placed on site that sample once per hour. Devices are removed off site when data is collected, and immediately replaced with another to prevent gaps in sampling. Devices are read through HoboWare, and results are saved as .xls or .csv files|
+| temp_F             | Degrees Fahrenheit (°F) | Converted from the recorded temperature in Celsius|
 
 
