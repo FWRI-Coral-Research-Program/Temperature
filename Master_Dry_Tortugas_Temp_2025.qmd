@@ -25,12 +25,13 @@ editor: visual
 librarian::shelf(tidyverse, dplyr, here, purrr, hms, stringr)
 ```
 
-- First, let's load in the large master file for all years: dry_tortugas_master_2025.csv
+-   First, let's load in the large master file for all years: dry_tortugas_master_2025.csv
 
 ```{r}
 # Import the master file from this working directory
 dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
 ```
+
 ## Join the 2022 data to the master file
 
 ```{r}
@@ -50,14 +51,14 @@ colSums(is.na(dry_tortugas_master_2025))
 # Look at column names
 colnames(dry_tortugas_master_2025)
 ```
-- It seems like this extra column "...1" appeared from somewhere. I am going to remove it, as it seems the old vestige of an ID column
+
+-   It seems like this extra column "...1" appeared from somewhere. I am going to remove it, as it seems the old vestige of an ID column
 
 ```{r}
 # Remove the ...1 column
 dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
   select(-`...1`)
 ```
-
 
 ## Combine the 2024 and 2025 data
 
@@ -72,7 +73,6 @@ dt_temp_2025 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/temp_dry_tortu
 dt_temp_2024_2025 <- bind_rows(dt_temp_2024, dt_temp_2025)
 ```
 
-
 ## Check for structural integrity and NAs
 
 ```{r}
@@ -85,23 +85,23 @@ dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
 ```
 
 ## Add a site_id column and populate with NAs to fill later with a case_when()
+
 ```{r}
 # Create a site_id column that is just NAs
 dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
   mutate(site_id = NA)
 ```
 
-
 ## Bring together the 2024-2025 data and the master list
 
-- It's finally time to bring it all together! We will bind the master list to the 2024 and 2025 data, then fill the missing values in site_id (should be 207,545) with the corresponding values using site_name. Then we recreate the observation_id column, run through our final checks, and it's done!
+-   It's finally time to bring it all together! We will bind the master list to the 2024 and 2025 data, then fill the missing values in site_id (should be 207,545) with the corresponding values using site_name. Then we recreate the observation_id column, run through our final checks, and it's done!
 
 ```{r}
 # Use bind_rows to join the data
 dry_tortugas_master_2025 <- bind_rows(dry_tortugas_master_2025, dt_temp_2024_2025)
 ```
 
-- Now, let's take a look at our structure and types
+-   Now, let's take a look at our structure and types
 
 ```{r}
 # Find the sum of all NA values in each column
@@ -113,9 +113,10 @@ colnames(dry_tortugas_master_2025)
 # Identify data types
 str(dry_tortugas_master_2025)
 ```
+
 ## Fill the NA values in site ID
 
-- First, we will identify all relevant site names, and correct any misspellings
+-   First, we will identify all relevant site names, and correct any misspellings
 
 ```{r}
 unique(dry_tortugas_master_2025$site_name)
@@ -133,7 +134,7 @@ dry_tortugas_master_2025$site_name <- str_replace_all(dry_tortugas_master_2025$s
 ))
 ```
 
-- Now that we have all 11 sites, we need to fill the empty NA in site_id with the corresponding value for each site_name
+-   Now that we have all 11 sites, we need to fill the empty NA in site_id with the corresponding value for each site_name
 
 ```{r}
 # Group by site_name and fill with site_id value
@@ -143,7 +144,7 @@ dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
   ungroup()
 ```
 
-- Now let's check for any remaining NA values in any column
+-   Now let's check for any remaining NA values in any column
 
 ```{r}
 # Find the sum of all NA values in each column
@@ -179,13 +180,29 @@ dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
 max(dry_tortugas_master_2025$temp_F)
 min(dry_tortugas_master_2025$temp_F)
 ```
-- It seems like there are some trimming issues that did not get removed. We will assign the high temps to a filtered anomaly dataset and decide from there what should get removed.
+
+-   It seems like there are some trimming issues that did not get removed. We will assign the high temps to a filtered anomaly dataset and decide from there what should get removed.
+
+- We will have to ignore the high temp from 2023, where temperatures did reach insane highs, so we will filter out data above 95 from 2024 and 2025
 
 ```{r}
 # Create a temperature anomaly dataframe
 high_temp_dt <- dry_tortugas_master_2025 %>%
-  filter(temp_F > 95 & temp_F < 101)
+  filter(temp_F > 95)
+
+# Remove the temperature anomalies 
+dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
+  filter(!(temp_F > 95 & date > as.Date("2023-08-10")))
 ```
+
+
+## Save the final file!
+
+```{r}
+# Write our final file to my current working directory
+write.csv(dry_tortugas_master_2025, "dry_tortugas_master_2025.csv", row.names = FALSE)
+```
+
 
 
 
