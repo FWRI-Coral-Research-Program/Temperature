@@ -163,11 +163,7 @@ dt_temp_2022$site_id <- as.integer(dt_temp_2022$site_id)
 str(dt_temp_2022)
 ```
 
-
-
-_____________________________________________________________________________________________________
-
-
+------------------------------------------------------------------------
 
 ## 2023 Data:
 
@@ -210,13 +206,13 @@ files <- list.files(
 dt_temp_2023 <- map_dfr(files, fix_csv)
 ```
 
-
 ### Check NA's and format
 
 ```{r}
 # Look for NAs in any column
 colSums(is.na(dt_temp_2022))
 ```
+
 -   We need a Site Name to add to this data, so I need to see how many sites are in the source_file column to determine which site names need to replace the abbreviations
 
 ```{r}
@@ -282,6 +278,7 @@ dt_temp_2023 <- dt_temp_2023 %>%
 dt_temp_2023 <- dt_temp_2023 %>%
   separate(date, into = c("date", "time"), sep = " ")
 ```
+
 ### Remove erroneous data
 
 ```{r}
@@ -292,6 +289,7 @@ colSums(is.na(dt_temp_2023))
 dt_temp_2023 <- dt_temp_2023 %>%
   filter(!is.na(temp_F) & temp_F != "")
 ```
+
 -   Great! Now we don't have any NA or missing values. Let's check now for any other strange inputs by using grepl() on our data set. Normally, we would use unique(), but seeing as how observation_id is all unique, it would give us over 97,000 unique things. So instead we will look for all values that do not contain only numbers
 
 ```{r}
@@ -353,7 +351,7 @@ dt_temp_2023$time <- as_hms(dt_temp_2023$time)
 dt_temp_2023$observation_id <- as.integer(dt_temp_2023$observation_id)
 ```
 
-______________________________________________________________________________________________________
+------------------------------------------------------------------------
 
 ## Save cleaned master lists to master list folder on my local computer
 
@@ -363,5 +361,3 @@ write.csv(dt_temp_2022, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortug
 
 write.csv(dt_temp_2023, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2023_Master.csv")
 ```
-
-

@@ -86,7 +86,7 @@ mutate(site_name = case_when(
 
 # Drop extra columns
 dt_temp_2024 <- dt_temp_2024 %>% 
-  select(-c(col4, col5, col6, source_file))
+  select(-c(col4, col5, col6))
 
 # Rename columns
 dt_temp_2024 <- dt_temp_2024 %>%
@@ -113,3 +113,87 @@ dt_temp_2024 <- dt_temp_2024 %>%
   mutate(temp_F = as.numeric(temp_F),
          temp_C = (temp_F - 32) / 1.8)
 ```
+
+## Assess missing data and change data types
+
+```{r}
+# Look for NAs
+colSums(is.na(dt_temp_2024))
+
+# Check the data types of our columns
+str(dt_temp_2024)
+```
+- It seems like there are some names that did not get transferred from the source_file names. I will take a look at the NA's and determine where the new site or typo is.
+
+```{r}
+# Identify rows with NA for site_name
+dt_2024_NAs <- dt_temp_2024 %>%
+  filter(is.na(site_name))
+
+# Find the file names that did not get turned into site_names
+unique(dt_2024_NAs$source_file)
+```
+- It seems like each of these csv files have different names for the locations, other than just the year. I will use the name of these locations as well for creating site names:
+
+```{r}
+# Use case_when to change the csv file names in source_file into site_name
+dt_temp_2024 <- dt_temp_2024 %>%
+mutate(site_name = case_when(
+    source_file == "BlackCoralRock_Off2_23-24.csv"        ~ "Black Coral Rock",
+    source_file == "BirdKey_Off1_23-24.csv"    ~ "Bird Key Reef",
+    source_file == "Davis_Off4_23-24.csv"      ~ "Davis Rock",
+    source_file == "Loggerhead_In1_23-24.csv" ~ "Loggerhead Patch",
+    source_file == "Mayers_In1_23-24.csv"     ~ "Mayer's Peak",
+    source_file == "Maze_In1_23-24.csv"       ~ "The Maze",
+    source_file == "Palmata_Off2_23-24.csv"    ~ "Palmata Patch",
+    source_file == "Prolifera_In2_23-24.csv"   ~ "Prolifera",
+    source_file == "Temptation_Off2_23-24.csv" ~ "Temptation",
+    source_file == "Texas_Off3_23-24.csv"       ~ "Texas Rock",
+     source_file == "WhiteShoal_Off3_23-24.csv" ~ "White Shoal",
+    TRUE                                       ~ NA_character_  # fallback for any other file names
+  ))
+
+# Check remaining NA values
+colSums(is.na(dt_temp_2024))
+```
+- Perfect! Now we can remove the source_file column and standardize our data types
+
+```{r}
+# Remove the source_file column using select()
+dt_temp_2024 <- dt_temp_2024 %>%
+  select(-source_file)
+```
+
+## Changing data types
+
+```{r}
+# Formatting the data set:
+
+# Check data types for formatting
+str(dt_temp_2024)
+
+# Change the date to date time:
+
+# Use mdy on the Date column to convert 
+dt_temp_2024$date <- mdy(dt_temp_2024$date)
+
+# Specify format of date as "yyyy-mm-dd", or 2006-09-15
+format(dt_temp_2024$date,"%Y-%m-%d")
+
+# Change the time to military time:
+
+# Convert the integer to a hour
+dt_temp_2024$time <- as_hms(dt_temp_2024$time)
+
+
+# Set the site_id column as an integer
+dt_temp_2024$observation_id <- as.integer(dt_temp_2024$observation_id)
+```
+## Write cleaned file to local device!
+
+```{r}
+# Write the file to the location where other master lists are hosted
+write.csv(dt_temp_2024, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2024_Master.csv")
+```
+
+
