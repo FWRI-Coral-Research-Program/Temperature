@@ -89,7 +89,11 @@ format(combined_temp$Date,"%Y-%m-%d")
 ## Converting to hours, mins, secs in military time
 
 ```{r}
-As 
+# Convert to integer before applying time
+combined_temp$Time <- as.integer(combined_temp$Time)
+
+# Convert the integer to a hour
+combined_temp$Time <- hms::hms(hours = combined_temp$Time)
 ```
 
 ## Converting site_id to integer

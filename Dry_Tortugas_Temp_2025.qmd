@@ -116,7 +116,6 @@ dt_temp_2025 <- dt_temp_2025 %>%
          temp_C = (temp_F - 32) / 1.8)
 ```
 
-
 ## Check for NA values (especially in the site_name column)
 
 ```{r}
@@ -126,7 +125,8 @@ colSums(is.na(dt_temp_2025))
 # Check the data types of our columns
 str(dt_temp_2025)
 ```
-- We have the same issue as before where we simply need to identify what the csv files were named as in some of the 2025 data in order to assign them to a site using case_when. I will use the same approach as last time, creating a data frame that has NAs in the site_name column and using len(unique()) and unique() to find the entries in the source_file column
+
+-   We have the same issue as before where we simply need to identify what the csv files were named as in some of the 2025 data in order to assign them to a site using case_when. I will use the same approach as last time, creating a data frame that has NAs in the site_name column and using len(unique()) and unique() to find the entries in the source_file column
 
 ```{r}
 # Identify rows with NA for site_name
@@ -136,6 +136,7 @@ dt_2025_NAs <- dt_temp_2025 %>%
 # Find the file names that did not get turned into site_names
 unique(dt_2025_NAs$source_file)
 ```
+
 ```{r}
 # Use case_when to change the csv file names in source_file into site_name
 dt_temp_2025 <- dt_temp_2025 %>%
@@ -157,7 +158,8 @@ mutate(site_name = case_when(
 # Check remaining NA values
 colSums(is.na(dt_temp_2025))
 ```
-- Excellent! Now we can get rid of the source_file column and continue on with our type cleaning
+
+-   Excellent! Now we can get rid of the source_file column and continue on with our type cleaning
 
 ```{r}
 # Remove the source_file column using select()
@@ -197,6 +199,3 @@ dt_temp_2025$observation_id <- as.integer(dt_temp_2025$observation_id)
 # Write the file to the location where other master lists are hosted
 write.csv(dt_temp_2025, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2025_Master.csv")
 ```
-
-
-
