@@ -27,7 +27,6 @@ editor: visual
 librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate)
 ```
 
-
 ## Use function and code from previous files (Dry_Tortugas_Temp_2022-2023.qmd) to load and clean data
 
 ```{r}
@@ -89,7 +88,7 @@ mutate(site_name = case_when(
 
 # Drop extra columns
 dt_temp_2025 <- dt_temp_2025 %>% 
-  select(-c(col4, col5, col6, source_file))
+  select(-c(col4, col5, col6))
 
 # Rename columns
 dt_temp_2025 <- dt_temp_2025 %>%
@@ -116,4 +115,49 @@ dt_temp_2025 <- dt_temp_2025 %>%
   mutate(temp_F = as.numeric(temp_F),
          temp_C = (temp_F - 32) / 1.8)
 ```
+
+
+## Check for NA values (especially in the site_name column)
+
+```{r}
+# Look for NAs
+colSums(is.na(dt_temp_2025))
+
+# Check the data types of our columns
+str(dt_temp_2025)
+```
+- We have the same issue as before where we simply need to identify what the csv files were named as in some of the 2025 data in order to assign them to a site using case_when. I will use the same approach as last time, creating a data frame that has NAs in the site_name column and using len(unique()) and unique() to find the entries in the source_file column
+
+```{r}
+# Identify rows with NA for site_name
+dt_2025_NAs <- dt_temp_2025 %>%
+  filter(is.na(site_name))
+
+# Find the file names that did not get turned into site_names
+unique(dt_2025_NAs$source_file)
+```
+```{r}
+# Use case_when to change the csv file names in source_file into site_name
+dt_temp_2025 <- dt_temp_2025 %>%
+mutate(site_name = case_when(
+    source_file == "BlackCoralRock_Off2_24-25.csv"        ~ "Black Coral Rock",
+    source_file == "BirdKey_Off1_24-25.csv"    ~ "Bird Key Reef",
+    source_file == "Davis_Off4_24-25.csv"      ~ "Davis Rock",
+    source_file == "Loggerhead_Off1_24-25.csv" ~ "Loggerhead Patch",
+    source_file == "Mayers_In4_24-25.csv"     ~ "Mayer's Peak",
+    source_file == "Maze_In2_24-25.csv"       ~ "The Maze",
+    source_file == "Palmata_Off2_24-25.csv"    ~ "Palmata Patch",
+    source_file == "Prolifera_In2_24-25.csv"   ~ "Prolifera",
+    source_file == "Temptation_Off2_24-25.csv" ~ "Temptation",
+    source_file == "Texas_Off3_24-25.csv"       ~ "Texas Rock",
+     source_file == "WhiteShoal_Off3_24-25.csv" ~ "White Shoal",
+    TRUE                                       ~ NA_character_  # fallback for any other file names
+  ))
+
+# Check remaining NA values
+colSums(is.na(dt_temp_2025))
+```
+
+
+
 

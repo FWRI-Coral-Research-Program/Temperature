@@ -123,7 +123,8 @@ colSums(is.na(dt_temp_2024))
 # Check the data types of our columns
 str(dt_temp_2024)
 ```
-- It seems like there are some names that did not get transferred from the source_file names. I will take a look at the NA's and determine where the new site or typo is.
+
+-   It seems like there are some names that did not get transferred from the source_file names. I will take a look at the NA's and determine where the new site or typo is.
 
 ```{r}
 # Identify rows with NA for site_name
@@ -133,7 +134,8 @@ dt_2024_NAs <- dt_temp_2024 %>%
 # Find the file names that did not get turned into site_names
 unique(dt_2024_NAs$source_file)
 ```
-- It seems like each of these csv files have different names for the locations, other than just the year. I will use the name of these locations as well for creating site names:
+
+-   It seems like each of these csv files have different names for the locations, other than just the year. I will use the name of these locations as well for creating site names:
 
 ```{r}
 # Use case_when to change the csv file names in source_file into site_name
@@ -156,7 +158,8 @@ mutate(site_name = case_when(
 # Check remaining NA values
 colSums(is.na(dt_temp_2024))
 ```
-- Perfect! Now we can remove the source_file column and standardize our data types
+
+-   Perfect! Now we can remove the source_file column and standardize our data types
 
 ```{r}
 # Remove the source_file column using select()
@@ -189,11 +192,10 @@ dt_temp_2024$time <- as_hms(dt_temp_2024$time)
 # Set the site_id column as an integer
 dt_temp_2024$observation_id <- as.integer(dt_temp_2024$observation_id)
 ```
+
 ## Write cleaned file to local device!
 
 ```{r}
 # Write the file to the location where other master lists are hosted
 write.csv(dt_temp_2024, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2024_Master.csv")
 ```
-
-
