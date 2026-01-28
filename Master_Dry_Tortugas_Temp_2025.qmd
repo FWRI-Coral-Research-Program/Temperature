@@ -172,10 +172,19 @@ dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
   select(observation_id, everything()) # moves observation_id to be the first column
 ```
 
-## Final Checks for the 2025 Dry Tortugas Temperature Data
+## Final Cleaning for the 2025 Dry Tortugas Temperature Data
 
 ```{r}
+# Look at the minimum and maximum temperatures
+max(dry_tortugas_master_2025$temp_F)
+min(dry_tortugas_master_2025$temp_F)
+```
+- It seems like there are some trimming issues that did not get removed. We will assign the high temps to a filtered anomaly dataset and decide from there what should get removed.
 
+```{r}
+# Create a temperature anomaly dataframe
+high_temp_dt <- dry_tortugas_master_2025 %>%
+  filter(temp_F > 95 & temp_F < 101)
 ```
 
 

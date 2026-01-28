@@ -96,9 +96,19 @@ dt_temp_2024 <- dt_temp_2024 %>%
     temp_F = col3
   )
 
+
 # We will separate the dates out into date and time
 dt_temp_2024 <- dt_temp_2024 %>%
-  separate(date, into = c("date", "time"), sep = " ")
+  mutate(datetime = mdy_hms(date)) %>%
+  mutate(
+    date = as.Date(datetime),
+    time = format(datetime, "%H:%M:%S")  # converts to 24-hour (military) time
+  ) %>%
+  select(-datetime)
+
+# Move the time column back to it's original place
+dt_temp_2024 <- dt_temp_2024 %>%
+  select(1:2, time, everything())
 
 # We will remove all 10 rows that have no temperature data (NA or empty)
 dt_temp_2024 <- dt_temp_2024 %>%
@@ -175,17 +185,7 @@ dt_temp_2024 <- dt_temp_2024 %>%
 # Check data types for formatting
 str(dt_temp_2024)
 
-# Change the date to date time:
-
-# Use mdy on the Date column to convert 
-dt_temp_2024$date <- mdy(dt_temp_2024$date)
-
-# Specify format of date as "yyyy-mm-dd", or 2006-09-15
-format(dt_temp_2024$date,"%Y-%m-%d")
-
 # Change the time to military time:
-
-# Convert the integer to a hour
 dt_temp_2024$time <- as_hms(dt_temp_2024$time)
 
 
