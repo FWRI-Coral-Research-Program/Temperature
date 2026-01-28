@@ -7,13 +7,13 @@ editor: visual
 
 # Temperature Data 2026 Update: Dry Tortugas National Park
 
-### Author- Madison Enda, January 26th, 2026
+### Author- Madison Enda, January 27th, 2026
 
 ### Contact- madison.enda\@myfwc.com
 
 ## Overview:
 
--   In this script, we will be combining the site specific temperature data sets from each year from 2022-2025 into master lists, aggregating them into a combined csv, and appending that to the dry_tortugas_master_2025.csv.
+-   In this script, I will be looking into the Dry Tortugas temperature data collected from 2022-2025. After sifting through the data sets, I quickly realized that incongruities between them required them to be separated out into different .qmd files. Thus, the beginning of this script shows some investigation and the latter is the separate cleaning of the 2023 and 2022 csv files.
 
 -   This data was pulled from the FWRI Coral Research Program's shared temperature data drive, and contain temperature data from the individual sites for each year, recorded once every hour.The final master file will be added to the new 2026 database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folders were downloaded manually to my device, and thus my file path is unique to my device.
 
@@ -27,7 +27,7 @@ editor: visual
 librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate)
 ```
 
-# Load in the csv files for each year, creating master files
+## Load in the csv files for each year 2022-2023, creating master files to investigate
 
 -   We will be loading the files in as individual years first, to see if they have the same columns, before attempting a join of all years
 
@@ -42,20 +42,6 @@ dt_temp_2022 <- list.files(
 
 dt_temp_2023 <- list.files(
   path = "C:/Users/Madison.enda/Desktop/Temp_Data/2023",
-  pattern = "\\.csv$",
-  full.names = TRUE
-) %>%
-  map_dfr(read_csv)
-
-dt_temp_2024 <- list.files(
-  path = "C:/Users/Madison.enda/Desktop/Temp_Data/2024",
-  pattern = "\\.csv$",
-  full.names = TRUE
-) %>%
-  map_dfr(read_csv)
-
-dt_temp_2025 <- list.files(
-  path = "C:/Users/Madison.enda/Desktop/Temp_Data/DT", # The 2025 file was called "DT" in drive
   pattern = "\\.csv$",
   full.names = TRUE
 ) %>%
@@ -80,17 +66,7 @@ colnames(dt_temp_2023)
 
 -   This one is extremely confusing. It seems as though each "title" was a column, and all the data simply saved into the first column for each observation? Not quite sure how this occurred.
 
-```{r}
-# Checking the column names of each set individually
-colnames(dt_temp_2024)
-```
-
-```{r}
-# Checking the column names of each set individually
-colnames(dt_temp_2025)
-```
-
--   Since 2023-2025 are in such strange formats, I'm going to load in one csv to check what each site looks like.
+-   Since the 2023 data is in such a strange format, I'm going to load in one csv to check what each site looks like.
 
 ```{r}
 # Specify file path of one csv file 
@@ -102,7 +78,100 @@ test_csv <- read_csv(file.path(folder_path, "BirdKey_Off1_22-23.csv"))
 
 -   It looks like each file has all of the data condensed into one column, but not all data is separated by commas or semicolons. I will have to format them as I load them into a list, and then combine them into a single df. I will likely have to do additional cleaning afterwards as a result of the lack of delimiters.
 
-## Begin cleaning the 2023-2025 csv files
+## 2022 Data:
+
+### Add Row and Remove Extra Columns
+
+The 2022 data has one row that was accidentally recorded as separate columns, so this information needs to be deleted and a new row added for this data
+
+```{r}
+# Remove extra rows
+dt_temp_2022 <- dt_temp_2022 %>%
+  select(-c(`10/10/2021`,`11`, `Loggerhead Patch`, `46`, `29.615`, `85.307`))
+
+# Rename the rows to match naming conventions
+dt_temp_2022 <- dt_temp_2022 %>%
+  rename(
+    date = Date,
+    time = Time,
+    site_name = Sitename,
+    site_id = Siteid,
+    temp_C = `Temp C`,
+    temp_F = `Temp F`
+  )
+
+# Add an observation_id column
+dt_temp_2022 <- dt_temp_2022 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+```
+
+### Check for NAs
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(dt_temp_2022))
+
+# Take a look at the NAs
+dt_2022_NAs <- dt_temp_2022 %>%
+  filter(is.na(temp_C))
+```
+
+-   These columns are just all NA all across. There is no evidence of date's or where it came from, so they must be removed.
+
+```{r}
+# Remove all rows that had NAs in them
+dt_temp_2022 <- dt_temp_2022 %>%
+  filter(!is.na(temp_C))
+
+# Check to see if there are NAs left somehow
+colSums(is.na(dt_temp_2022))
+```
+
+### Begin formatting the 2022 data in accordance with the 2006-2021 process
+
+```{r}
+# Check data types for formatting
+str(dt_temp_2022)
+
+# Change the date to date time:
+
+# Use as.Date on the Date column to convert 
+dt_temp_2022$date <- as.Date(dt_temp_2022$date, format = "%m/%d/%Y")
+
+# Specify format of date as "yyyy-mm-dd", or 2006-09-15
+format(dt_temp_2022$date,"%Y-%m-%d")
+
+# Change the time to military time:
+
+# Convert to integer before applying time
+dt_temp_2022$time <- as.integer(dt_temp_2022$time)
+
+# Convert the integer to a hour
+dt_temp_2022$time <- hms::hms(hours = dt_temp_2022$time)
+
+# Set site_id as integer
+
+# Set the site_id column as an integer
+dt_temp_2022$site_id <- as.integer(dt_temp_2022$site_id)
+```
+
+### Final 2022 check
+
+```{r}
+# Check data types for formatting
+str(dt_temp_2022)
+```
+
+
+
+_____________________________________________________________________________________________________
+
+
+
+## 2023 Data:
+
+### Begin formatting the 2023 data in accordance with the 2006-2021 process
 
 ```{r}
 # Attempt to clean the 2023 file into 6 columns
@@ -141,6 +210,13 @@ files <- list.files(
 dt_temp_2023 <- map_dfr(files, fix_csv)
 ```
 
+
+### Check NA's and format
+
+```{r}
+# Look for NAs in any column
+colSums(is.na(dt_temp_2022))
+```
 -   We need a Site Name to add to this data, so I need to see how many sites are in the source_file column to determine which site names need to replace the abbreviations
 
 ```{r}
@@ -159,6 +235,8 @@ dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
 # Look at the unique values in that column
 unique(dry_tortugas_master_2025$site_name)
 ```
+
+### Add Site Names
 
 -   There seems to be quite a few typos, which we will fix once all years have been added together, but for now we are gonna stick to correct spellings, and use that for our case_when() to change the file names into site names
 
@@ -204,8 +282,7 @@ dt_temp_2023 <- dt_temp_2023 %>%
 dt_temp_2023 <- dt_temp_2023 %>%
   separate(date, into = c("date", "time"), sep = " ")
 ```
-
-## Check for NAs and remove extra data
+### Remove erroneous data
 
 ```{r}
 # Find the sum of all NA values in each column
@@ -215,13 +292,15 @@ colSums(is.na(dt_temp_2023))
 dt_temp_2023 <- dt_temp_2023 %>%
   filter(!is.na(temp_F) & temp_F != "")
 ```
-
 -   Great! Now we don't have any NA or missing values. Let's check now for any other strange inputs by using grepl() on our data set. Normally, we would use unique(), but seeing as how observation_id is all unique, it would give us over 97,000 unique things. So instead we will look for all values that do not contain only numbers
 
 ```{r}
 # Look for erraneous values in our data set
 dt_2023_errors <- dt_temp_2023 %>%
   filter(grepl("[^0-9]", observation_id))
+
+# Check out the non-numbers
+head(dt_2023_errors)
 ```
 
 -   This shows us that we have 10 rows with \# as the input, and these need to be removed as well
@@ -248,270 +327,41 @@ dt_temp_2023 <- dt_temp_2023 %>%
 colSums(is.na(dt_temp_2023))
 ```
 
-## Apply previous steps to 2024 & 2025 data
-
-```{r}
-# Fix the 2024 data
-
-# Function to fix a single malformed CSV
-fix_csv <- function(file_path, n_cols = 6, sep = ",") {
-
-  df <- read_csv(
-    file_path,
-    col_names = FALSE,
-    show_col_types = FALSE
-  )
-
-  names(df) <- "raw_data"
-
-  df %>%
-    separate(
-      col = raw_data,
-      into = paste0("col", 1:n_cols),
-      sep = sep,
-      fill = "right",
-      extra = "drop",
-      convert = TRUE
-    ) %>%
-    mutate(source_file = basename(file_path))
-}
-
-# Get all CSV files in the folder
-files <- list.files(
-  path = "C:/Users/Madison.enda/Desktop/Temp_Data/2024",
-  pattern = "\\.csv$",
-  full.names = TRUE
-)
-
-# Fix each CSV, then combine into one data frame
-dt_temp_2024 <- map_dfr(files, fix_csv)
-
-# Remove the first two rows
-dt_temp_2024 <- dt_temp_2024 %>% 
-  slice(-(1:2))
-
-# Use case_when to change the csv file names in source_file into site_name
-dt_temp_2024 <- dt_temp_2024 %>%
-mutate(site_name = case_when(
-    source_file == "BCR_Off1_23-24.csv"        ~ "Black Coral Rock",
-    source_file == "BirdKey_Off1_23-24.csv"    ~ "Bird Key Reef",
-    source_file == "Davis_Off1_23-24.csv"      ~ "Davis Rock",
-    source_file == "Loggerhead_Off1_23-24.csv" ~ "Loggerhead Patch",
-    source_file == "Mayers_Off2_23-24.csv"     ~ "Mayer's Peak",
-    source_file == "Maze_Off1_23-24.csv"       ~ "The Maze",
-    source_file == "Palmata_Off2_23-24.csv"    ~ "Palmata Patch",
-    source_file == "Prolifera_In2_23-24.csv"   ~ "Prolifera",
-    source_file == "Temptation_Off2_23-24.csv" ~ "Temptation",
-    source_file == "Texas_In2_23-24.csv"       ~ "Texas Rock",
-    source_file == "WhiteShoal_Off3_23-24.csv" ~ "White Shoal",
-    TRUE                                       ~ NA_character_  # fallback for any other file names
-  ))
-
-# Drop extra columns
-dt_temp_2024 <- dt_temp_2024 %>% 
-  select(-c(col4, col5, col6, source_file))
-
-# Rename columns
-dt_temp_2024 <- dt_temp_2024 %>%
-  rename(
-    observation_id = col1,
-    date = col2,
-    temp_F = col3
-  )
-
-# We will separate the dates out into date and time
-dt_temp_2024 <- dt_temp_2024 %>%
-  separate(date, into = c("date", "time"), sep = " ")
-
-# We will remove all 10 rows that have no temperature data (NA or empty)
-dt_temp_2024 <- dt_temp_2024 %>%
-  filter(!is.na(temp_F) & temp_F != "")
-
-# Remove the # observations in the observation_id column (10 rows)
-dt_temp_2024 <- dt_temp_2024 %>%
-  filter(!grepl("[^0-9]", observation_id))
-
-# Create the temperature column in Celsius
-dt_temp_2024 <- dt_temp_2024 %>%
-  mutate(temp_F = as.numeric(temp_F),
-         temp_C = (temp_F - 32) / 1.8)
-```
-
-```{r}
-# Fix the 2025 data
-
-# Function to fix a single malformed CSV
-fix_csv <- function(file_path, n_cols = 6, sep = ",") {
-
-  df <- read_csv(
-    file_path,
-    col_names = FALSE,
-    show_col_types = FALSE
-  )
-
-  names(df) <- "raw_data"
-
-  df %>%
-    separate(
-      col = raw_data,
-      into = paste0("col", 1:n_cols),
-      sep = sep,
-      fill = "right",
-      extra = "drop",
-      convert = TRUE
-    ) %>%
-    mutate(source_file = basename(file_path))
-}
-
-# Get all CSV files in the folder
-files <- list.files(
-  path = "C:/Users/Madison.enda/Desktop/Temp_Data/DT",
-  pattern = "\\.csv$",
-  full.names = TRUE
-)
-
-# Fix each CSV, then combine into one data frame
-dt_temp_2025 <- map_dfr(files, fix_csv)
-
-# Remove the first two rows
-dt_temp_2025 <- dt_temp_2025 %>% 
-  slice(-(1:2))
-
-# Use case_when to change the csv file names in source_file into site_name
-dt_temp_2025 <- dt_temp_2025 %>%
-mutate(site_name = case_when(
-    source_file == "BCR_Off1_24-25.csv"        ~ "Black Coral Rock",
-    source_file == "BirdKey_Off1_24-25.csv"    ~ "Bird Key Reef",
-    source_file == "Davis_Off1_24-25.csv"      ~ "Davis Rock",
-    source_file == "Loggerhead_Off1_24-25.csv" ~ "Loggerhead Patch",
-    source_file == "Mayers_Off2_24-25.csv"     ~ "Mayer's Peak",
-    source_file == "Maze_Off1_24-25.csv"       ~ "The Maze",
-    source_file == "Palmata_Off2_24-25.csv"    ~ "Palmata Patch",
-    source_file == "Prolifera_In2_24-25.csv"   ~ "Prolifera",
-    source_file == "Temptation_Off2_24-25.csv" ~ "Temptation",
-    source_file == "Texas_In2_24-25.csv"       ~ "Texas Rock",
-    source_file == "WhiteShoal_Off3_24-25.csv" ~ "White Shoal",
-    TRUE                                       ~ NA_character_  # fallback for any other file names
-  ))
-
-# Drop extra columns
-dt_temp_2025 <- dt_temp_2025 %>% 
-  select(-c(col4, col5, col6, source_file))
-
-# Rename columns
-dt_temp_2025 <- dt_temp_2025 %>%
-  rename(
-    observation_id = col1,
-    date = col2,
-    temp_F = col3
-  )
-
-# We will separate the dates out into date and time
-dt_temp_2025 <- dt_temp_2025 %>%
-  separate(date, into = c("date", "time"), sep = " ")
-
-# We will remove all 10 rows that have no temperature data (NA or empty)
-dt_temp_2025 <- dt_temp_2025 %>%
-  filter(!is.na(temp_F) & temp_F != "")
-
-# Remove the # observations in the observation_id column (10 rows)
-dt_temp_2025 <- dt_temp_2025 %>%
-  filter(!grepl("[^0-9]", observation_id))
-
-# Create the temperature column in Celsius
-dt_temp_2025 <- dt_temp_2025 %>%
-  mutate(temp_F = as.numeric(temp_F),
-         temp_C = (temp_F - 32) / 1.8)
-```
-
-## Fix the 2022 data: Special Case
-
-The 2022 data has one row that was accidentally recorded as separate columns, so this information needs to be deleted and a new row added for this data
-
-```{r}
-# Remove extra rows
-dt_temp_2022 <- dt_temp_2022 %>%
-  select(-c(`10/10/2021`,`11`, `Loggerhead Patch`, `46`, `29.615`, `85.307`))
-
-# Rename the rows to match naming conventions
-dt_temp_2022 <- dt_temp_2022 %>%
-  rename(
-    date = Date,
-    time = Time,
-    site_name = Sitename,
-    site_id = Siteid,
-    temp_C = `Temp C`,
-    temp_F = `Temp F`
-  )
-
-# Add an observation_id column
-dt_temp_2022 <- dt_temp_2022 %>%
-  arrange(date) %>% # oldest → newest
-  mutate(observation_id = row_number()) # oldest value gets ID = 1
-```
-
-_ Next, we will create an observation_id column, look for NAs, and anomalous values
-
-```{r}
-# Find the sum of all NA values in each column
-colSums(is.na(dt_temp_2022))
-
-# Take a look at the NAs
-dt_2022_NAs <- dt_temp_2022 %>%
-  filter(is.na(temp_C))
-```
-
--   These columns are just all NA all across. There is no evidence of date's or where it came from, so they must be removed.
-
-```{r}
-# Remove all rows that had NAs in them
-dt_temp_2022 <- dt_temp_2022 %>%
-  filter(!is.na(temp_C))
-
-# Check to see if there are NAs left somehow
-colSums(is.na(dt_temp_2022))
-```
-
-## Begin joining data!
-
--   We can finally start joining this data! We will begin by creating a site_id table from the 2022 data that will be used to fill in the missing info in the 2023 to 2025 data.
-
-```{r}
-# Combine the 2022-2025 data
-dt_temp_2023_2025 <- bind_rows(dt_temp_2023, dt_temp_2024, dt_temp_2025)
-```
-
--   Next, we will check the data type of this data against the 2022 temp data
-
-```{r}
-# Check data types
-str(dt_temp_2023_2025)
-```
-
-```{r}
-# Check NAs or oddities
-colSums(is.na(dt_temp_2023_2025))
-```
-- This is quite odd. I will check the number of NAs present in each data set instead
-
-
-
-
-
--   Ok, time to type our data following the 2006-2021 conventions!
+## Begin formatting the 2023 data in accordance with the 2006-2021 process
 
 ```{r}
 # Formatting the data set:
 
-# Use as.Date on the Date column to convert 
-dt_temp_2023_2025$date <- mdy(dt_temp_2023_2025$date)
+# Check data types for formatting
+str(dt_temp_2023)
 
-# Convert to integer before applying time
-dt_temp_2023_2025$time <- as.integer(dt_temp_2023_2025$time)
+# Change the date to date time:
+
+# Use mdy on the Date column to convert 
+dt_temp_2023$date <- mdy(dt_temp_2023$date)
+
+# Specify format of date as "yyyy-mm-dd", or 2006-09-15
+format(dt_temp_2023$date,"%Y-%m-%d")
+
+# Change the time to military time:
 
 # Convert the integer to a hour
-combined_temp$Time <- hms::hms(hours = combined_temp$Time)
+dt_temp_2023$time <- as_hms(dt_temp_2023$time)
 
-# Set the siteid column as an integer
-dt_temp_2023_2025$site_id <- as.integer(dt_temp_2023_2025$site_id)
+
+# Set the site_id column as an integer
+dt_temp_2023$observation_id <- as.integer(dt_temp_2023$observation_id)
 ```
+
+______________________________________________________________________________________________________
+
+## Save cleaned master lists to master list folder on my local computer
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(dt_temp_2022, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2022_Master.csv")
+
+write.csv(dt_temp_2023, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2023_Master.csv")
+```
+
+
