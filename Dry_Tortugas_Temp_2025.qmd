@@ -157,7 +157,46 @@ mutate(site_name = case_when(
 # Check remaining NA values
 colSums(is.na(dt_temp_2025))
 ```
+- Excellent! Now we can get rid of the source_file column and continue on with our type cleaning
 
+```{r}
+# Remove the source_file column using select()
+dt_temp_2025 <- dt_temp_2025 %>%
+  select(-source_file)
+```
+
+## Changing data types
+
+```{r}
+# Formatting the data set:
+
+# Check data types for formatting
+str(dt_temp_2025)
+
+# Change the date to date time:
+
+# Use mdy on the Date column to convert 
+dt_temp_2025$date <- mdy(dt_temp_2025$date)
+
+# Specify format of date as "yyyy-mm-dd", or 2006-09-15
+format(dt_temp_2025$date,"%Y-%m-%d")
+
+# Change the time to military time:
+
+# Convert the integer to a hour
+dt_temp_2025$time <- as_hms(dt_temp_2025$time)
+
+
+# Set the site_id column as an integer
+dt_temp_2025$observation_id <- as.integer(dt_temp_2025$observation_id)
+```
+
+## Write cleaned file to local device!
+
+```{r}
+# Write the file to the location where other master lists are hosted
+write.csv(dt_temp_2025, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2025_Master.csv")
+```
 
 
 
