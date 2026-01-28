@@ -154,7 +154,7 @@ unique(dt_temp_2023$source_file)
 
 ```{r}
 # Import the dry_tortugas_master_2025.csv
-#dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
+dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
 
 # Look at the unique values in that column
 unique(dry_tortugas_master_2025$site_name)
@@ -450,7 +450,7 @@ dt_temp_2022 <- dt_temp_2022 %>%
   mutate(observation_id = row_number()) # oldest value gets ID = 1
 ```
 
-\_ Next, we will create an observation_id column, look for NAs, and anomalous values
+_ Next, we will create an observation_id column, look for NAs, and anomalous values
 
 ```{r}
 # Find the sum of all NA values in each column
@@ -492,6 +492,11 @@ str(dt_temp_2023_2025)
 # Check NAs or oddities
 colSums(is.na(dt_temp_2023_2025))
 ```
+- This is quite odd. I will check the number of NAs present in each data set instead
+
+
+
+
 
 -   Ok, time to type our data following the 2006-2021 conventions!
 
