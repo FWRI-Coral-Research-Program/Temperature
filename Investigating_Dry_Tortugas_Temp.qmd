@@ -72,4 +72,40 @@ summary_table %>%
   )
 ```
 
--   Ok, so after checking with the original scripts, its looking like 2022-2025 are the only ones where observation counts could be amiss. I will look into how
+-   Ok, so after checking with the original scripts, its looking like 2022-2025 are the only ones where observation counts could be amiss. I will look into how these numbers got to be so inflated. My guess is that its a trimming issue in relation to when loggers were deployed, picked-up, and actually turned off.
+
+- I will now see how many unique dates are recorded per year, just to ensure that no location has been sampled more frequently than it should have been.
+
+```{r}
+# Check daily counts
+daily_counts <- dry_tortugas_master_2025 %>%
+  mutate(year = year(date)) %>%
+  group_by(year, site_id, site_name, date) %>%
+  summarise(
+    n_obs = n(),
+    .groups = "drop"
+  )
+
+# Let's find our problem days, that are not equal to 24
+problem_days <- daily_counts %>%
+  filter(n_obs != 24) %>%
+  arrange(year, site_id, site_name, date)
+
+# Check what the max number of extra hours is
+problem_summary <- problem_days %>%
+  group_by(year, site_id, site_name) %>%
+  summarise(
+    n_bad_days = n(),
+    min_obs = min(n_obs),
+    max_obs = max(n_obs),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_bad_days))
+```
+
+
+## Assessing the issue:
+
+It appears as though some loggers were not turned off right away, and therefore recorded temperature simultaneously with the new loggers (double-dipping our data), and this could have introduced some issues. However, the higher numbers of samples per day (144) indicate a sensor set to a higher sampling rate than once per hour, and therefore we need to check how many duplicate samples for the same location, the same time, and the same hour occurred. This can be done here, but also by looking at the time in minutes from earlier files.
+
+

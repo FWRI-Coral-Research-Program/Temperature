@@ -12,9 +12,8 @@ editor: visual
 ### Contact- madison.enda\@myfwc.com
 
 ## Overview:
-Hi there!
 
--   In this script, we create the final dry_tortugas_master_2025.csv file, with cleaned and updated information from 2006-2025. The data was all pulled from the FWRI Coral Research Program's sharepoint drive, and was joined and standardized in the other scripts in this repository. Therefore, we will be joining the 2022, 2023, 2024, and 2025 master files to the dry_tortugas_master_2025.csv, checking for temperature anomalies, and then exporting to this device, and then the organization's drive until such a time as we have permissions to upload it to a server. 
+-   In this script, we create the final dry_tortugas_master_2025.csv file, with cleaned and updated information from 2006-2025. The data was all pulled from the FWRI Coral Research Program's sharepoint drive, and was joined and standardized in the other scripts in this repository. Therefore, we will be joining the 2022, 2023, 2024, and 2025 master files to the dry_tortugas_master_2025.csv, checking for temperature anomalies, and then exporting to this device, and then the organization's drive until such a time as we have permissions to upload it to a server.
 
 ## Load libraries
 
@@ -93,7 +92,7 @@ dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
   mutate(site_id = NA)
 ```
 
-## Bring together the 2024-2025 data and the master list
+# Bring together the 2024-2025 data and the master list
 
 -   It's finally time to bring it all together! We will bind the master list to the 2024 and 2025 data, then fill the missing values in site_id (should be 207,545) with the corresponding values using site_name. Then we recreate the observation_id column, run through our final checks, and it's done!
 
@@ -130,6 +129,9 @@ dry_tortugas_master_2025$site_name <- str_replace_all(dry_tortugas_master_2025$s
   "Black Coral Rcok" = "Black Coral Rock",
   "Pamlata Patch" = "Palmata Patch",
   "White Shaol" = "White Shoal",
+  "Prolifer Patch" = "Prolifera Patch",
+  "Prolifera" = "Prolifera Patch",
+  "Temptation" = "Temptation Rock",
   "Temptation Rock Rock" = "Temptation Rock",
   "Prolifera Patch Patch" = "Prolifera Patch"
 ))
