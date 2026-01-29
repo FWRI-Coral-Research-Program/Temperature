@@ -191,6 +191,10 @@ dt_temp_2024$time <- as_hms(dt_temp_2024$time)
 
 # Set the site_id column as an integer
 dt_temp_2024$observation_id <- as.integer(dt_temp_2024$observation_id)
+
+
+# Check data types for formatting
+str(dt_temp_2024)
 ```
 
 ## Write cleaned file to local device!
