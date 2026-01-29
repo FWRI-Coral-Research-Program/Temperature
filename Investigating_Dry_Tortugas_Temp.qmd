@@ -1,0 +1,75 @@
+---
+title: "Investigating_Dry_Tortugas_Temp"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Investigating the Dry Tortugas Temperature Data- 2025 Master List
+
+### Author: Maddy Enda
+
+### Written: January 29th, 2026
+
+## Overview:
+
+-   The 2025 Dry Tortugas Temperature data set was compiled in January of 2026 as a part of a database management project. The data, collected from HoboWare autonomous sensors placed on each survey site in the Dry Tortugas, was aggregated from the FWRI Coral Research Program's One Drive.
+
+-   In this script, we will be looking through the data, performing basic summary statistics and visualizations to ensure data was collected and cleaned correctly before continuing with other data sets.
+
+## Import Libraries
+
+```{r}
+# Use the librarian package to import many libraries at once'
+librarian::shelf(tidyverse,
+                 dplyr,
+                 here,
+                 hms,
+                 purrr,
+                 ggplot2,
+                 gt,
+                 lubridate)
+```
+
+## Load in the dry tortugas temperature file
+
+```{r}
+# Import the master file temperature csv for 2025
+dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
+```
+
+## Investigate data
+
+```{r}
+# Create summary statistics using summarise()
+ summary_table <- dry_tortugas_master_2025%>%
+   mutate(year = lubridate::year(date)) %>%
+  group_by(year) %>%
+  summarise(
+    mean_temp   = mean(temp_F, na.rm = TRUE),
+    median_temp = median(temp_F, na.rm = TRUE),
+    sd_temp     = sd(temp_F, na.rm = TRUE),
+    min_temp    = min(temp_F, na.rm = TRUE),
+    max_temp    = max(temp_F, na.rm = TRUE),
+    n_obs       = n()
+  )
+
+# Display table using
+summary_table %>%
+  gt() %>%
+  fmt_number(
+    columns = -year,
+    decimals = 2
+  ) %>%
+   tab_options(
+    table.font.color = "black",
+    data_row.padding = px(12),
+    column_labels.padding = px(12)
+  ) %>%
+  tab_header(
+    title = "Dry Tortugas Annual Temperature Summary",
+    subtitle = "Temperature in Degrees Fahrenheit by Year"
+  )
+```
+
+-   Ok, so after checking with the original scripts, its looking like 2022-2025 are the only ones where observation counts could be amiss. I will look into how

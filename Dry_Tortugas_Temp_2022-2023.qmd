@@ -82,10 +82,35 @@ test_csv <- read_csv(file.path(folder_path, "BirdKey_Off1_22-23.csv"))
 
 ### Add Row and Remove Extra Columns
 
-The 2022 data has one row that was accidentally recorded as separate columns, so this information needs to be deleted and a new row added for this data
+The 2022 data has one row that was accidentally recorded as separate columns, so this information needs to be deleted and a new row added for this data. 
+
+However, it seems like there are some rows where there is no data in the actual columns, and everything was instead recorded in the empty columns labeled "`10/10/2021`,`11`, `Loggerhead Patch`, `46`, `29.615`, `85.307`". Therefore, I will index those rows to a separate data set, which I will rename and join with the main data set to maintain the correct number of observations
 
 ```{r}
-# Remove extra rows
+# Select all the rows that have data in the wrong columns
+dt_incorrect_columns <- dt_temp_2022 %>%
+  slice(22286:29704)
+
+# Remove columns with no data 
+dt_incorrect_columns <- dt_incorrect_columns %>%
+  select(-c(Date, Time, Sitename, Siteid, `Temp C`, `Temp F`))
+
+# Rename the rows to match naming conventions
+dt_incorrect_columns <- dt_incorrect_columns %>%
+  rename(
+    date = `10/10/2021`,
+    time = `11`,
+    site_name = `Loggerhead Patch`,
+    site_id = `46`,
+    temp_C = `29.615`,
+    temp_F = `85.307`
+  )
+```
+
+- Now that we have a data frame with our "missing" data, we can clean the original and bind them
+
+```{r}
+# Remove extra columns that are now empty
 dt_temp_2022 <- dt_temp_2022 %>%
   select(-c(`10/10/2021`,`11`, `Loggerhead Patch`, `46`, `29.615`, `85.307`))
 
@@ -100,10 +125,8 @@ dt_temp_2022 <- dt_temp_2022 %>%
     temp_F = `Temp F`
   )
 
-# Add an observation_id column
-dt_temp_2022 <- dt_temp_2022 %>%
-  arrange(date) %>% # oldest → newest
-  mutate(observation_id = row_number()) # oldest value gets ID = 1
+# Join the two 2022 data sets
+dt_temp_2022 <- bind_rows(dt_temp_2022, dt_incorrect_columns)
 ```
 
 ### Check for NAs
@@ -150,11 +173,29 @@ dt_temp_2022$time <- as.integer(dt_temp_2022$time)
 # Convert the integer to a hour
 dt_temp_2022$time <- hms::hms(hours = dt_temp_2022$time)
 
-# Set site_id as integer
-
 # Set the site_id column as an integer
 dt_temp_2022$site_id <- as.integer(dt_temp_2022$site_id)
 ```
+
+
+```{r}
+# Add the missing row that was recorded in the columns
+dt_temp_2022 <- dt_temp_2022 %>%
+  add_row(
+    date      = as.Date("2021-10-11"),
+    time      = hms::as_hms("08:00:00"),
+    site_name = "Loggerhead Patch",
+    site_id   = as.integer(46),
+    temp_C    = 29.8,
+    temp_F    = 85.6
+  )
+
+# Add an observation_id column
+dt_temp_2022 <- dt_temp_2022 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+```
+
 
 ### Final 2022 check
 
@@ -210,7 +251,7 @@ dt_temp_2023 <- map_dfr(files, fix_csv)
 
 ```{r}
 # Look for NAs in any column
-colSums(is.na(dt_temp_2022))
+colSums(is.na(dt_temp_2023))
 ```
 
 -   We need a Site Name to add to this data, so I need to see how many sites are in the source_file column to determine which site names need to replace the abbreviations
@@ -276,7 +317,16 @@ dt_temp_2023 <- dt_temp_2023 %>%
 ```{r}
 # We will separate the dates out into date and time
 dt_temp_2023 <- dt_temp_2023 %>%
-  separate(date, into = c("date", "time"), sep = " ")
+  mutate(datetime = mdy_hms(date)) %>%
+  mutate(
+    date = as.Date(datetime),
+    time = format(datetime, "%H:%M:%S")  # converts to 24-hour (military) time
+  ) %>%
+  select(-datetime)
+
+# Move the time column back to it's original place
+dt_temp_2023 <- dt_temp_2023 %>%
+  select(1:2, time, everything())
 ```
 
 ### Remove erroneous data
@@ -288,9 +338,12 @@ colSums(is.na(dt_temp_2023))
 # We will remove all 10 rows that have no temperature data (NA or empty)
 dt_temp_2023 <- dt_temp_2023 %>%
   filter(!is.na(temp_F) & temp_F != "")
+
+# Find the sum of all NA values in each column
+colSums(is.na(dt_temp_2023))
 ```
 
--   Great! Now we don't have any NA or missing values. Let's check now for any other strange inputs by using grepl() on our data set. Normally, we would use unique(), but seeing as how observation_id is all unique, it would give us over 97,000 unique things. So instead we will look for all values that do not contain only numbers
+- Let's check now for any other strange inputs by using grepl() on our data set. Normally, we would use unique(), but seeing as how observation_id is all unique, it would give us over 97,000 unique things. So instead we will look for all values that do not contain only numbers
 
 ```{r}
 # Look for erraneous values in our data set
@@ -333,19 +386,8 @@ colSums(is.na(dt_temp_2023))
 # Check data types for formatting
 str(dt_temp_2023)
 
-# Change the date to date time:
-
-# Use mdy on the Date column to convert 
-dt_temp_2023$date <- mdy(dt_temp_2023$date)
-
-# Specify format of date as "yyyy-mm-dd", or 2006-09-15
-format(dt_temp_2023$date,"%Y-%m-%d")
-
-# Change the time to military time:
-
 # Convert the integer to a hour
 dt_temp_2023$time <- as_hms(dt_temp_2023$time)
-
 
 # Set the site_id column as an integer
 dt_temp_2023$observation_id <- as.integer(dt_temp_2023$observation_id)
