@@ -197,14 +197,6 @@ dt_temp_2024$observation_id <- as.integer(dt_temp_2024$observation_id)
 str(dt_temp_2024)
 ```
 
-```{r}
-# Find all observations that occurred 01/01/2024
-january_2024 <- dt_temp_2024 %>%
-  filter(date == )
-```
-
-
-
 
 ## Write cleaned file to local device!
 
