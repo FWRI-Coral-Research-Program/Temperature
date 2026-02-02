@@ -1,5 +1,5 @@
 # csv files
-dry_tortugas_master_2025.csv
+*.csv
 
 # History files
 .Rhistory
