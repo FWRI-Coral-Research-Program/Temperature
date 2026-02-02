@@ -1,0 +1,292 @@
+---
+title: "Florida_Keys_Temp_2001-2021"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Florida Keys National Marine Sanctuary
+
+### Author- Madison Enda, February 2nd, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script, we will be combining all "master list" temperature files (in .xlsx format) off of the FWRI Coral Research Program's shared drive, and creating an index to be used as our primary key for the 'Temperature' table in the upcoming database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folder was downloaded manually to my device, and thus my file path is unique to my device.
+
+-   This workflow will include general cleaning (standardizing naming conventions, removing superfluous data, etc.) and the final result will be uploaded to the shared drive once again, until permissions are received to migrate to a new platform.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
+```
+
+## Loading in the .xlsx files
+
+```{r}
+# Grab file path where master files are
+folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/FKNMS_2002-2021"
+
+# List all .xlsx files
+file_list <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
+```
+
+## Read the files into a single data frame
+
+```{r}
+# Use the purrr package to apply read_excel to all files
+df_list <- suppressWarnings(purrr::map(file_list, read_csv)) # I suppressed warnings as it warned me that every date did not come in date format lol
+
+# Combine using bind_rows since same columns exist
+combined_temp <- bind_rows(df_list)
+```
+
+## View the combined data frame
+
+```{r}
+# Get some stats about our new data frame:
+
+# Number of columns and number of rows
+cat("Rows:", nrow(combined_temp), "Columns:", ncol(combined_temp), "\n")
+
+# Take a look at the bottom of the df
+tail(combined_temp)
+```
+
+## Check rows with NA values
+
+```{r}
+# Check to see if the empty ID rows can be removed
+colSums(is.na(combined_temp))
+```
+
+-   It looks like the ID columns 7-79 can all be removed, since all rows are empty
+
+```{r}
+# Remove empty columns
+combined_temp <- combined_temp %>%
+  select(Date, Time, SiteName, SiteID, TempC, TempF)
+```
+
+- Now let's find where the other NA values are in the data
+
+```{r}
+# Filter to rows where Date is NA
+no_dates <- combined_temp %>%
+  filter(is.na(Date))
+
+# Ensure that there is no data where the Date is also NA
+colSums(is.na(no_dates))
+
+# Remove these rows from the data set
+combined_temp <- combined_temp %>%
+  filter(!is.na(Date))
+```
+
+- Now, let's check any rows that may have NA values and see what needs to be corrected before data types can be changed across the board
+
+```{r}
+# Keep rows where any column has NA
+rows_with_na <- combined_temp %>%
+  filter(if_any(everything(), is.na))
+```
+
+- It looks like only two rows of the remaining rows with NAs actually contain valuable information. It seems as though they somehow got put into the incorrect format, but they do contain data. Thus I will manually add the information contained in these rows:
+
+5/6/2003
+16
+Tennessee Shallow
+55
+27.554
+
+5/13/2013
+15
+Tennessee Deep
+75
+26.475
+
+and remove all rows that remain with any NAs in them since they will not contain any unique data.
+
+```{r}
+# Remove rows where any column has NA
+combined_temp <- combined_temp %>%
+  filter(if_all(everything(), ~ !is.na(.)))
+
+# Now add the two rows of data that were in the wrong format
+combined_temp <- combined_temp %>%
+  add_row(Date = "05/06/2003",
+          Time = 16,
+          SiteName = "Tennessee Shallow",
+          SiteID = 55,
+          TempC = 27.554,
+          TempF = 81.597)
+
+# Check to see if the above worked before proceeding
+
+# Add the second row
+combined_temp <- combined_temp %>%
+    add_row(Date = "05/13/2013",
+          Time = 15,
+          SiteName = "Tennessee Deep",
+          SiteID = 75,
+          TempC = 26.475,
+          TempF = 79.655)
+```
+
+
+## Ensure all columns have data in correct type and format
+
+```{r}
+# Use str to inspect the column name, type, and format
+str(combined_temp)
+```
+
+-   Here we can see that site_id, Date, and Time need to be converted before we move forward, because: 1.) Date is currently in date + time format, but there is not time recorded in this column 2.) Time is simply a number, and being recorded in decimal foramt which uses more memory 3.) siteid is being recorded as a decimal, which uses more memory
+
+## Converting to proper date format
+
+```{r}
+# Find any erroneous dates by identifying odd patterns. We don't want to use unique() or distinct() here because that will return millions of characters lol
+date_patterns <- combined_temp %>%
+  mutate(
+    date_pattern = gsub("[0-9]", "D", Date)
+  ) %>%
+  count(date_pattern, sort = TRUE)
+```
+
+- There are 8 distinct patterns of date saved here, I will use their structure to convert them all to what we are loking for with the lubridate() package
+
+```{r}
+# Use lubridate::parse_date_time() function to get dates
+combined_temp$Date <- parse_date_time(
+  combined_temp$Date,
+  orders = c("mdy", "mdy HM", "mdy HMS")
+)
+```
+
+## Converting to hours, mins, secs in military time
+
+```{r}
+# Convert to integer before applying time
+combined_temp$Time <- as.integer(combined_temp$Time)
+
+# Convert the integer to a hour
+combined_temp$Time <- hms::hms(hours = combined_temp$Time)
+```
+
+## Converting site_id to integer
+
+```{r}
+# Set the siteid column as an integer
+combined_temp$SiteID <- as.integer(combined_temp$SiteID)
+```
+
+## Check one last time to see if type changes worked
+
+```{r}
+# Use str to inspect the column name, type, and format
+str(combined_temp)
+```
+
+## Ensure we have no missing data or other such issues
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(combined_temp))
+```
+
+```{r}
+# Check to see if the highest and lowest temps make sense
+max(combined_temp$`Temp F`)
+min(combined_temp$`Temp F`)
+```
+
+-   It seems we have three NA values in Temp F for some reason, so I will find them and fill them with the appropriate value converting from Fahrenheit
+
+-   Secondly, we seem to have temperature values that are much higher than would be expected.I will filter to all observations over 101 (the record high recorded in 2023) and see how many there are, as well as values below 65 (from what I can research, the average minimum recorded historical value).
+
+## Find which rows have the NA values
+
+```{r}
+# Identify the missing rows and confirm if Temp C has data
+missing_temp_F <- combined_temp %>%
+  filter(is.na(`Temp F`))
+
+# Since Temp C has data for all three of these observations (all Palmata Patch in 2016 a couple hours apart), we will use case_when to replace the NA values with the correct temp in Fahrenheit converting from the Celsius value
+combined_temp <- combined_temp %>%
+  mutate(
+    `Temp F` = case_when(
+      is.na(`Temp F`) ~ `Temp C` * 1.8 + 32,
+      TRUE            ~ `Temp F`
+    )
+  )
+
+# Check again to see if we have any NA values
+colSums(is.na(combined_temp))
+```
+
+## Find erroneous temperature values
+
+```{r}
+# Take the rows where the Temp F column has values higher than 101 degrees
+high_temp_rows <- combined_temp %>%
+  filter(`Temp F` > 100)
+
+# Take the rows where the Temp F column has values lower than 68 degrees
+low_temp_rows <- combined_temp %>%
+  filter(`Temp F` < 65)
+```
+
+-   After checking in with other members of the team, we found the cold anomalies to correspond with the 2009-2011 cold shocks that did dramatically affect reefs. Seeing as how the two observations from 2018 occurred at 3:00 AM and 4:00 AM in January, I will be leaving those values as well.
+
+-   Looking at all the high temp anomalies, they all seemed to occur in September of 2018, and I found that all values exceeding 95 degrees came from the same location at the same time. Therefore, after manually checking the master list from 2018, I have determined that all values above 92 degrees Fahrenheit (all from Texas Rock in 2018, from the same 24 hour time period)
+
+```{r}
+# Remove extraneous values
+filtered_temp <- combined_temp %>%
+  filter(`Temp F` < 92 )
+```
+
+## Assigning a primary key: observation ID
+
+```{r}
+# Create a column called Observation_ID
+filtered_temp <- filtered_temp %>%
+  arrange(Date) %>% # oldest → newest
+  mutate(Observation_ID = row_number()) # oldest value gets ID = 1
+```
+
+## Cleaning Names & Exporting
+
+```{r}
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
+dry_tortugas_master_2026 <- filtered_temp %>%
+  rename(
+    observation_id = Observation_ID,
+    date = Date,
+    time = Time,
+    site_name = sitename,
+    site_id = siteid,
+    temp_C = `Temp C`,
+    temp_F = `Temp F`
+  )
+```
+
+-   I now have a cleaned data frame of temperature from 2006-2021, we can export this. Normally, I would export directly to a server or database, but we unfortunately do not have this set up at the moment, so it will be saved in my current working directory, where the files were drawn from in the beginning.
+
+## Write the final csv
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(dry_tortugas_master_2026, "dry_tortugas_master_2025.csv", row.names = FALSE)
+```
+
+# Wrap Up:
+
+I will be adding other master csv files to this "dry_tortugas_master_2025.csv", until we have it updated with all our data through 2025. However, while some years have master csv files (2019-2021), some do not have master lists available on the same drive, and therefore I will have to build those out before adding them (2022-2025).
