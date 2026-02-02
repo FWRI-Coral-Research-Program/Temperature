@@ -28,7 +28,8 @@ librarian::shelf(tidyverse,
                  purrr,
                  ggplot2,
                  gt,
-                 lubridate)
+                 lubridate,
+                 plotly)
 ```
 
 ## Load in the dry tortugas temperature file
@@ -72,7 +73,7 @@ summary_table %>%
   )
 ```
 
--   Ok, so after checking with the original scripts, its looking like 2022-2025 are the only ones where observation counts could be amiss. I will look into how these numbers got to be so inflated. My guess is that its a trimming issue in relation to when loggers were deployed, picked-up, and actually turned off.
+-   OK, so after checking with the original scripts, its looking like 2022-2025 are the only ones where observation counts could be amiss. I will look into how these numbers got to be so inflated. My guess is that its a trimming issue in relation to when loggers were deployed, picked-up, and actually turned off.
 
 - I will now see how many unique dates are recorded per year, just to ensure that no location has been sampled more frequently than it should have been.
 
@@ -113,5 +114,32 @@ However, this all seems within the bound of possibility, and we cab therefore mo
 
 
 ## Visualizing!
+
+```{r}
+# Example data frame: df
+# Columns: observation_id, date, time, site_name, site_id, temp_C, temp_F
+p <- ggplot(dry_tortugas_master_2025, aes(x = date, y = temp_F, 
+                    group = site_name,   # group by site
+                    color = site_name,   # color lines by site
+                    text = paste(
+                      "Site ID:", site_id,
+                      "<br>Site Name:", site_name,
+                      "<br>Temp (F):", temp_F,
+                      "<br>Date:", date,
+                      "<br>Time:", time
+                    ))) +
+  geom_line() +
+  geom_point(alpha = 0.5) +  # points help with hover
+  labs(
+    x = "Date",
+    y = "Temperature (F)",
+    title = "Temperature over Time by Site"
+  ) +
+  theme_minimal()
+
+# Make it interactive
+plot(p)
+
+```
 
 
