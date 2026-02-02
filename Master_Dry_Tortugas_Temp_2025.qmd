@@ -86,10 +86,10 @@ dt_temp_2023_2025 <- bind_rows(dt_temp_2023, dt_temp_2024, dt_temp_2025)
 
 ```{r}
 # Find the sum of all NA values in each column
-colSums(is.na(dt_temp_2024_2025))
+colSums(is.na(dt_temp_2023_2025))
 
 # Remove the added id column
-dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
+dt_temp_2023_2025 <- dt_temp_2023_2025 %>%
   select(-`...1`)
 ```
 
@@ -97,7 +97,7 @@ dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
 
 ```{r}
 # Create a site_id column that is just NAs
-dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
+dt_temp_2023_2025 <- dt_temp_2023_2025 %>%
   mutate(site_id = NA)
 ```
 
@@ -107,7 +107,7 @@ dt_temp_2024_2025 <- dt_temp_2024_2025 %>%
 
 ```{r}
 # Use bind_rows to join the data
-dry_tortugas_master_2025 <- bind_rows(dry_tortugas_master_2025, dt_temp_2024_2025)
+dry_tortugas_master_2025 <- bind_rows(dry_tortugas_master_2025, dt_temp_2023_2025)
 ```
 
 -   Now, let's take a look at our structure and types
@@ -211,5 +211,5 @@ filter(!(temp_F > 95 & date < as.Date("2023-08-09"))) # Remove rows where both c
 
 ```{r}
 # Write our final file to my current working directory
-write.csv(dry_tortugas_master_2025, "final_dry_tortugas_master_2025.csv", row.names = FALSE)
+write.csv(dry_tortugas_master_2025, "dry_tortugas_master_2025.csv", row.names = FALSE)
 ```

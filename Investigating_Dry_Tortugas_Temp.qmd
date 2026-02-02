@@ -35,7 +35,7 @@ librarian::shelf(tidyverse,
 
 ```{r}
 # Import the master file temperature csv for 2025
-dry_tortugas_master_2025 <- read_csv("final_dry_tortugas_master_2025.csv")
+dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
 ```
 
 ## Investigate data
