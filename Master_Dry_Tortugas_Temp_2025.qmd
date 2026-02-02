@@ -60,9 +60,18 @@ dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
   select(-`...1`)
 ```
 
+```{r}
+obs_2022 <-dry_tortugas_master_2025 %>%
+  mutate(year = year(date)) %>%
+  filter(year == 2022)
+```
+
 ## Combine the 2024 and 2025 data
 
 ```{r}
+# Import the 2023 file
+dt_temp_2023 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2023_Master.csv")
+
 # Import the 2024 file
 dt_temp_2024 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2024_Master.csv")
 
@@ -70,7 +79,7 @@ dt_temp_2024 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/temp_dry_tortu
 dt_temp_2025 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2025_Master.csv")
 
 # Combine the 2024 and 2025 data sets
-dt_temp_2024_2025 <- bind_rows(dt_temp_2024, dt_temp_2025)
+dt_temp_2023_2025 <- bind_rows(dt_temp_2023, dt_temp_2024, dt_temp_2025)
 ```
 
 ## Check for structural integrity and NAs
@@ -195,12 +204,12 @@ high_temp_dt <- dry_tortugas_master_2025 %>%
 
 # Remove the temperature anomalies 
 dry_tortugas_master_2025 <- dry_tortugas_master_2025 %>%
-  filter(!(temp_F > 95 & date > as.Date("2023-08-10")))
+filter(!(temp_F > 95 & date < as.Date("2023-08-09"))) # Remove rows where both conditions are met: temperature is higher than 95 and the date is less than August 9th, 2023. We know from looking at the high_temp_dt data set that 2022 was the only year with extraordinary anomalies for what we know the temperatures were from other sources 
 ```
 
 ## Save the final file!
 
 ```{r}
 # Write our final file to my current working directory
-write.csv(dry_tortugas_master_2025, "dry_tortugas_master_2025.csv", row.names = FALSE)
+write.csv(dry_tortugas_master_2025, "final_dry_tortugas_master_2025.csv", row.names = FALSE)
 ```

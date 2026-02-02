@@ -117,31 +117,31 @@ site_name <- c("Bird Key Reef","Black Coral Rock","Davis Rock","Loggerhead Patch
 
 location <- c("Off 1","Off 2","Off 4","Off 1","In 4","In 2","Off 2","In 2","Off 2","Off 3","Off 3")
 
-logger_sn <- c(20423796,20668468,20868482,20668465,20868475,20668474,20606822,20668464,20668463,20668466,20364167)
+logger_sn <- c(20868467,20868476,20868480,20868483,21151642,21151645,21151649,21151657,21151658,21151659,21788096)
 
 
 deployment_date <- as.Date(c(
-  "2023-08-09","2023-08-11","2023-08-12","2023-08-10","2023-08-10",
-  "2023-08-10","2023-08-09","2023-08-09","2023-08-11","2023-08-08","2023-08-10"
-))
-
-deployment_time <- hms::as_hms(c(
-  "11:06:00","09:00:00","08:50:00","09:13:00","13:43:00",
-  "16:44:00","11:06:00","09:07:00","14:15:00","14:03:00","10:21:00"
-))
-
-retrieval_date <- as.Date(c(
   "2024-11-15","2024-08-10","2024-08-09","2024-08-08","2024-08-07",
   "2024-08-07","2024-08-09","2024-08-09","2024-08-08","2024-08-08","2024-08-07"
 ))
 
-retrieval_time <- hms::as_hms(c(
+deployment_time <- hms::as_hms(c(
   "08:57:00","09:39:00","14:21:00","16:42:00","11:07:00",
   "16:46:00","13:18:00","09:28:00","15:38:00","10:24:00","08:51:00"
 ))
 
+retrieval_date <- as.Date(c(
+  "2025-08-06","2025-08-07","2025-08-08","2025-08-06","2025-08-10",
+  "2025-08-09","2025-08-06","2025-08-06","2025-08-07","2025-08-05","2025-08-08"
+))
+
+retrieval_time <- hms::as_hms(c(
+  "08:58:00","09:52:00","11:09:00","16:13:00","11:54:00",
+  "11:43:00","08:59:00","10:26:00","15:23:00","15:47:00","14:19:00"
+))
+
 # Create the data frame from the vectors
-date_ranges_23_24 <- data.frame(
+date_ranges_24_25 <- data.frame(
   site_id        = site_id,
   site_name   = site_name,
   location     = location,
@@ -176,14 +176,14 @@ trim_temp_csv <- function(cleaned_df, date_ranges_df) {
 ```{r}
 # Grab all the 2022-2023 files
 files <- list.files(
-  "C:/Users/Madison.enda/Desktop/Temp_Data/2024",
+  "C:/Users/Madison.enda/Desktop/Temp_Data/DT",
   pattern = "\\.csv$", 
   full.names = TRUE
 )
 
-dt_temp_2024 <- map_dfr(files, function(file) {
+dt_temp_2025 <- map_dfr(files, function(file) {
   clean_temp_csv(file) %>% 
-    trim_temp_csv(date_ranges_23_24)
+    trim_temp_csv(date_ranges_24_25)
 })
 ```
 
@@ -192,7 +192,7 @@ dt_temp_2024 <- map_dfr(files, function(file) {
 
 ```{r}
 # Check daily counts
-daily_counts <- dt_temp_2024 %>%
+daily_counts <- dt_temp_2025 %>%
   mutate(year = year(date)) %>%
   group_by(year, site_name, date) %>%
   summarise(
@@ -207,7 +207,7 @@ problem_days <- daily_counts %>%
 ```
 
 ```{r}
-unique(dt_temp_2024$site_name)
+unique(dt_temp_2025$site_name)
 ```
 
 

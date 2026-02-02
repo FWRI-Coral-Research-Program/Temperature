@@ -3,6 +3,8 @@ title: "Dry_Tortugas_Temp_2022-2025"
 author: "Maddy Enda"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Temperature Data 2026 Update: Dry Tortugas National Park
@@ -151,6 +153,7 @@ dt_temp_2022 <- dt_temp_2022 %>%
 colSums(is.na(dt_temp_2022))
 ```
 
+
 ### Begin formatting the 2022 data in accordance with the 2006-2021 process
 
 ```{r}
@@ -165,13 +168,10 @@ dt_temp_2022$date <- as.Date(dt_temp_2022$date, format = "%m/%d/%Y")
 # Specify format of date as "yyyy-mm-dd", or 2006-09-15
 format(dt_temp_2022$date,"%Y-%m-%d")
 
-# Change the time to military time:
+# Change the time to military time
+dt_temp_2022 <- dt_temp_2022 %>%
+  mutate(time = hms::hms(hours = time))
 
-# Convert to integer before applying time
-dt_temp_2022$time <- as.integer(dt_temp_2022$time)
-
-# Convert the integer to a hour
-dt_temp_2022$time <- hms::hms(hours = dt_temp_2022$time)
 
 # Set the site_id column as an integer
 dt_temp_2022$site_id <- as.integer(dt_temp_2022$site_id)

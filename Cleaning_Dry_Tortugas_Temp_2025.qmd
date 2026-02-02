@@ -1,0 +1,224 @@
+---
+title: "Cleaning_Dry_Tortugas_Temp_2025"
+format:
+  html:
+    theme: default
+---
+
+# Cleaning the Dry Tortugas Temperature data: Trimming Each CSV
+
+### Author: Maddy Enda
+### Contact: madison.enda@myfwc.com
+### Written: 01/30/2026
+
+
+## Overview:
+
+After compiling all of the years of temperature data in Dry Tortugas National Park (2006-2025), I found there were multiple entries for some locations at the same exact time. To get to the bottom of this mystery, we are going to trim any data that may have been recorded after the sensors were removed from the water.
+
+The dates and times that each csv should be trimmed to are in a logger data file on the shared temperature drive for the FWRI Coral Research Program.
+
+## Import libraries
+
+```{r}
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate, stringr)
+```
+
+
+____________________________________________________________________________________________________________________
+
+# Creating functionality for all 2022-2023 files
+## Cleaning function:
+
+```{r}
+# Function to clean the files
+
+# Lookup table for site names based on source_file
+site_lookup <- tibble(
+  source_file = c(
+    "BlackCoralRock_Off2_24-25.csv",
+    "BirdKey_Off1_24-25.csv",
+    "Davis_Off4_24-25.csv",
+    "Loggerhead_Off1_24-25.csv",
+    "Mayers_In4_24-25.csv",
+    "Maze_In2_24-25.csv",
+    "Palmata_Off2_24-25.csv",
+    "Prolifera_In2_24-25.csv",
+    "Temptation_Off2_24-25.csv",
+    "Texas_Off3_24-25.csv",
+    "WhiteShoal_Off3_24-25.csv"
+  ),
+  site_name = c(
+    "Black Coral Rock",
+    "Bird Key Reef",
+    "Davis Rock",
+    "Loggerhead Patch",
+    "Mayer's Peak",
+    "The Maze",
+    "Palmata Patch",
+    "Prolifera Patch",
+    "Temptation Rock",
+    "Texas Rock",
+    "White Shoal"
+  )
+)
+
+# --- Function to clean a single CSV ---
+clean_temp_csv <- function(file_path, n_cols = 6, sep = ",") {
+  
+  df <- read_csv(file_path, col_names = FALSE, show_col_types = FALSE) %>%
+    setNames("raw_data") %>%
+    separate(
+      col = raw_data,
+      into = paste0("col", 1:n_cols),
+      sep = sep,
+      fill = "right",
+      extra = "drop",
+      convert = TRUE
+    ) %>%
+    slice(-(1:2)) %>%                     # remove first two rows
+    mutate(source_file = basename(file_path)) %>%
+    select(col1, col2, col3, source_file) %>%
+    rename(
+      observation_id = col1,
+      datetime_raw   = col2,
+      temp_F         = col3
+    ) %>%
+    filter(!is.na(temp_F), temp_F != "") %>%
+    filter(!grepl("[^0-9]", observation_id)) %>%
+    mutate(
+      # Parse date/time from the raw datetime column
+      datetime = mdy_hms(datetime_raw),
+      date     = as.Date(datetime),
+      time     = as_hms(format(datetime, "%H:%M:%S")),
+      temp_F   = as.numeric(temp_F),
+      temp_C   = (temp_F - 32) / 1.8,
+      observation_id = as.integer(observation_id)
+    ) %>%
+    left_join(site_lookup, by = "source_file") %>%
+    select(-datetime_raw, -source_file) %>%
+    select(observation_id, date, time, datetime, everything())
+  
+  return(df)
+}
+```
+
+# Trimming function:
+
+```{r}
+# Let's unpack one file, trim it, and then automate our process
+# I will first create a data frame with the data from the Temp Logger Metadata File
+
+# Create vectors of the data 
+site_id <- c(82,83,28,46,45,27,42,43,44,29,41)
+
+site_name <- c("Bird Key Reef","Black Coral Rock","Davis Rock","Loggerhead Patch","Mayer's Peak","The Maze","Palmata Patch","Prolifera Patch", "Temptation Rock","Texas Rock","White Shoal")
+
+location <- c("Off 1","Off 2","Off 4","Off 1","In 4","In 2","Off 2","In 2","Off 2","Off 3","Off 3")
+
+logger_sn <- c(20868467,20868476,20868480,20868483,21151642,21151645,21151649,21151657,21151658,21151659,21788096)
+
+
+deployment_date <- as.Date(c(
+  "2024-11-15","2024-08-10","2024-08-09","2024-08-08","2024-08-07",
+  "2024-08-07","2024-08-09","2024-08-09","2024-08-08","2024-08-08","2024-08-07"
+))
+
+deployment_time <- hms::as_hms(c(
+  "08:57:00","09:39:00","14:21:00","16:42:00","11:07:00",
+  "16:46:00","13:18:00","09:28:00","15:38:00","10:24:00","08:51:00"
+))
+
+retrieval_date <- as.Date(c(
+  "2025-08-06","2025-08-07","2025-08-08","2025-08-06","2025-08-10",
+  "2025-08-09","2025-08-06","2025-08-06","2025-08-07","2025-08-05","2025-08-08"
+))
+
+retrieval_time <- hms::as_hms(c(
+  "08:58:00","09:52:00","11:09:00","16:13:00","11:54:00",
+  "11:43:00","08:59:00","10:26:00","15:23:00","15:47:00","14:19:00"
+))
+
+# Create the data frame from the vectors
+date_ranges_24_25 <- data.frame(
+  site_id        = site_id,
+  site_name   = site_name,
+  location     = location,
+  logger_sn = logger_sn,
+  deployment_date = deployment_date,
+  deployment_time = deployment_time,
+  retrieval_date = retrieval_date,
+  retrieval_time = retrieval_time,
+  stringsAsFactors = FALSE
+)
+
+# Create a trimming function based on this table
+trim_temp_csv <- function(cleaned_df, date_ranges_df) {
+  
+  date_ranges_df <- date_ranges_df %>%
+    mutate(
+      deploy_dt  = as.POSIXct(deployment_date) + deployment_time,
+      retrieve_dt = as.POSIXct(retrieval_date) + retrieval_time
+    ) %>%
+    select(site_name, deploy_dt, retrieve_dt)
+  
+  cleaned_df %>%
+    left_join(date_ranges_df, by = "site_name") %>%
+    filter(datetime >= deploy_dt, datetime <= retrieve_dt) %>%
+    select(-c(deploy_dt, retrieve_dt, datetime))
+}
+```
+
+
+# OK, time to try them all!
+
+```{r}
+# Grab all the 2022-2023 files
+files <- list.files(
+  "C:/Users/Madison.enda/Desktop/Temp_Data/DT",
+  pattern = "\\.csv$", 
+  full.names = TRUE
+)
+
+dt_temp_2025 <- map_dfr(files, function(file) {
+  clean_temp_csv(file) %>% 
+    trim_temp_csv(date_ranges_24_25)
+})
+```
+
+
+## Check daily counts
+
+```{r}
+# Check daily counts
+daily_counts <- dt_temp_2025 %>%
+  mutate(year = year(date)) %>%
+  group_by(year, site_name, date) %>%
+  summarise(
+    n_obs = n(),
+    .groups = "drop"
+  )
+
+# Let's find our problem days, that are not equal to 24
+problem_days <- daily_counts %>%
+  filter(n_obs != 24) %>%
+  arrange(year, site_name, date)
+```
+
+```{r}
+unique(dt_temp_2025$site_name)
+```
+
+
+## Write the final file
+
+```{r}
+# Write the cleaned and trimmed 2022-2023 file to our master file folder
+write.csv(dt_temp_2025, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2025_Master.csv")
+```
+
+
+
+
+

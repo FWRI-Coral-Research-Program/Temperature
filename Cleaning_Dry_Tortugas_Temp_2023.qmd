@@ -227,7 +227,3 @@ problem_days <- daily_counts %>%
 # Write the cleaned and trimmed 2022-2023 file to our master file folder
 write.csv(dt_temp_2023, "C:/Users/Madison.Enda/Desktop/Temp_Data/temp_dry_tortugas_2026_update/DRTO_2023_Master.csv")
 ```
-
-
-
-

@@ -35,7 +35,7 @@ librarian::shelf(tidyverse,
 
 ```{r}
 # Import the master file temperature csv for 2025
-dry_tortugas_master_2025 <- read_csv("dry_tortugas_master_2025.csv")
+dry_tortugas_master_2025 <- read_csv("final_dry_tortugas_master_2025.csv")
 ```
 
 ## Investigate data
@@ -106,6 +106,12 @@ problem_summary <- problem_days %>%
 
 ## Assessing the issue:
 
-It appears as though some loggers were not turned off right away, and therefore recorded temperature simultaneously with the new loggers (double-dipping our data), and this could have introduced some issues. However, the higher numbers of samples per day (144) indicate a sensor set to a higher sampling rate than once per hour, and therefore we need to check how many duplicate samples for the same location, the same time, and the same hour occurred.I will go back to the 2022-2-2025 files, and ensure that each csv file is trimmed before being added to the combined yearly file.
+After a lengthy investigation, and trimming the 2022-2025 data with the updated logger deployment windows, the additional data comes from loggers recording more than the typical once per hour over a 24 hour period, or less due to logger loss, low battery, etc.
+
+
+However, this all seems within the bound of possibility, and we cab therefore move forward with this data!
+
+
+## Visualizing!
 
 
