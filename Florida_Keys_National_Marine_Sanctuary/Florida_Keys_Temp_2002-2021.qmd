@@ -200,47 +200,41 @@ str(combined_temp)
 # Find the sum of all NA values in each column
 colSums(is.na(combined_temp))
 ```
+## Change column names to fit current conventions
+
+```{r}
+# Change column names to fit conventions
+combined_temp <- combined_temp %>%
+  rename(
+    date = Date,
+    time = Time,
+    site_name = SiteName,
+    site_id = SiteID,
+    temp_C = TempC,
+    temp_F = TempF
+  )
+```
+
+
 
 ```{r}
 # Check to see if the highest and lowest temps make sense
-max(combined_temp$`Temp F`)
-min(combined_temp$`Temp F`)
+max(combined_temp$temp_F)
+min(combined_temp$temp_F)
 ```
 
--   It seems we have three NA values in Temp F for some reason, so I will find them and fill them with the appropriate value converting from Fahrenheit
-
--   Secondly, we seem to have temperature values that are much higher than would be expected.I will filter to all observations over 101 (the record high recorded in 2023) and see how many there are, as well as values below 65 (from what I can research, the average minimum recorded historical value).
-
-## Find which rows have the NA values
-
-```{r}
-# Identify the missing rows and confirm if Temp C has data
-missing_temp_F <- combined_temp %>%
-  filter(is.na(`Temp F`))
-
-# Since Temp C has data for all three of these observations (all Palmata Patch in 2016 a couple hours apart), we will use case_when to replace the NA values with the correct temp in Fahrenheit converting from the Celsius value
-combined_temp <- combined_temp %>%
-  mutate(
-    `Temp F` = case_when(
-      is.na(`Temp F`) ~ `Temp C` * 1.8 + 32,
-      TRUE            ~ `Temp F`
-    )
-  )
-
-# Check again to see if we have any NA values
-colSums(is.na(combined_temp))
-```
+- We seem to have temperature values that are much higher than would be expected.I will filter to all observations over 101 (the record high recorded in 2023) and see how many there are, as well as values below 65 (from what I can research, the average minimum recorded historical value).
 
 ## Find erroneous temperature values
 
 ```{r}
-# Take the rows where the Temp F column has values higher than 101 degrees
+# Take the rows where the Temp F column has values higher than 92 degrees
 high_temp_rows <- combined_temp %>%
-  filter(`Temp F` > 100)
+  filter(temp_F > 95)
 
 # Take the rows where the Temp F column has values lower than 68 degrees
 low_temp_rows <- combined_temp %>%
-  filter(`Temp F` < 65)
+  filter(temp_F < 59)
 ```
 
 -   After checking in with other members of the team, we found the cold anomalies to correspond with the 2009-2011 cold shocks that did dramatically affect reefs. Seeing as how the two observations from 2018 occurred at 3:00 AM and 4:00 AM in January, I will be leaving those values as well.
@@ -250,32 +244,16 @@ low_temp_rows <- combined_temp %>%
 ```{r}
 # Remove extraneous values
 filtered_temp <- combined_temp %>%
-  filter(`Temp F` < 92 )
+  filter(temp_F < 95 )
 ```
 
 ## Assigning a primary key: observation ID
 
 ```{r}
 # Create a column called Observation_ID
-filtered_temp <- filtered_temp %>%
-  arrange(Date) %>% # oldest → newest
-  mutate(Observation_ID = row_number()) # oldest value gets ID = 1
-```
-
-## Cleaning Names & Exporting
-
-```{r}
-# Rename old columns to be snake case (`Temp C` to Temp_C)  
-dry_tortugas_master_2026 <- filtered_temp %>%
-  rename(
-    observation_id = Observation_ID,
-    date = Date,
-    time = Time,
-    site_name = sitename,
-    site_id = siteid,
-    temp_C = `Temp C`,
-    temp_F = `Temp F`
-  )
+florida_keys_master_2025 <- filtered_temp %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
 ```
 
 -   I now have a cleaned data frame of temperature from 2006-2021, we can export this. Normally, I would export directly to a server or database, but we unfortunately do not have this set up at the moment, so it will be saved in my current working directory, where the files were drawn from in the beginning.
@@ -284,9 +262,9 @@ dry_tortugas_master_2026 <- filtered_temp %>%
 
 ```{r}
 # Write the final data frame to a csv in my current working directory
-write.csv(dry_tortugas_master_2026, "dry_tortugas_master_2025.csv", row.names = FALSE)
+write.csv(florida_keys_master_2026, "florida_keys_master_2025.csv", row.names = FALSE)
 ```
 
 # Wrap Up:
 
-I will be adding other master csv files to this "dry_tortugas_master_2025.csv", until we have it updated with all our data through 2025. However, while some years have master csv files (2019-2021), some do not have master lists available on the same drive, and therefore I will have to build those out before adding them (2022-2025).
+I will be adding other master csv files to this "florida_keys_master_2025.csv", until we have it updated with all our data through 2025. However,the years 2022, 2023, 2024, and 2025 do not have master files in place, so they will have to be created and cleaned before I can join. In the next script, I will be working with the 2022 data.
