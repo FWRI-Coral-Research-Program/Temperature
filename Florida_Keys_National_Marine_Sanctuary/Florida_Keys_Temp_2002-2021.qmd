@@ -74,7 +74,7 @@ combined_temp <- combined_temp %>%
   select(Date, Time, SiteName, SiteID, TempC, TempF)
 ```
 
-- Now let's find where the other NA values are in the data
+-   Now let's find where the other NA values are in the data
 
 ```{r}
 # Filter to rows where Date is NA
@@ -89,7 +89,7 @@ combined_temp <- combined_temp %>%
   filter(!is.na(Date))
 ```
 
-- Now, let's check any rows that may have NA values and see what needs to be corrected before data types can be changed across the board
+-   Now, let's check any rows that may have NA values and see what needs to be corrected before data types can be changed across the board
 
 ```{r}
 # Keep rows where any column has NA
@@ -97,19 +97,11 @@ rows_with_na <- combined_temp %>%
   filter(if_any(everything(), is.na))
 ```
 
-- It looks like only two rows of the remaining rows with NAs actually contain valuable information. It seems as though they somehow got put into the incorrect format, but they do contain data. Thus I will manually add the information contained in these rows:
+-   It looks like only two rows of the remaining rows with NAs actually contain valuable information. It seems as though they somehow got put into the incorrect format, but they do contain data. Thus I will manually add the information contained in these rows:
 
-5/6/2003
-16
-Tennessee Shallow
-55
-27.554
+5/6/2003 16 Tennessee Shallow 55 27.554
 
-5/13/2013
-15
-Tennessee Deep
-75
-26.475
+5/13/2013 15 Tennessee Deep 75 26.475
 
 and remove all rows that remain with any NAs in them since they will not contain any unique data.
 
@@ -139,7 +131,6 @@ combined_temp <- combined_temp %>%
           TempF = 79.655)
 ```
 
-
 ## Ensure all columns have data in correct type and format
 
 ```{r}
@@ -160,7 +151,7 @@ date_patterns <- combined_temp %>%
   count(date_pattern, sort = TRUE)
 ```
 
-- There are 8 distinct patterns of date saved here, I will use their structure to convert them all to what we are loking for with the lubridate() package
+-   There are 8 distinct patterns of date saved here, I will use their structure to convert them all to what we are looking for with the lubridate() package
 
 ```{r}
 # Use lubridate::parse_date_time() function to get dates
@@ -200,6 +191,7 @@ str(combined_temp)
 # Find the sum of all NA values in each column
 colSums(is.na(combined_temp))
 ```
+
 ## Change column names to fit current conventions
 
 ```{r}
@@ -215,15 +207,13 @@ combined_temp <- combined_temp %>%
   )
 ```
 
-
-
 ```{r}
 # Check to see if the highest and lowest temps make sense
 max(combined_temp$temp_F)
 min(combined_temp$temp_F)
 ```
 
-- We seem to have temperature values that are much higher than would be expected.I will filter to all observations over 101 (the record high recorded in 2023) and see how many there are, as well as values below 65 (from what I can research, the average minimum recorded historical value).
+-   We seem to have temperature values that are much higher than would be expected.I will filter to all observations over 101 (the record high recorded in 2023) and see how many there are, as well as values below 65 (from what I can research, the average minimum recorded historical value).
 
 ## Find erroneous temperature values
 
@@ -262,7 +252,7 @@ florida_keys_master_2025 <- filtered_temp %>%
 
 ```{r}
 # Write the final data frame to a csv in my current working directory
-write.csv(florida_keys_master_2026, "florida_keys_master_2025.csv", row.names = FALSE)
+write.csv(florida_keys_master_2025, "florida_keys_master_2025.csv", row.names = FALSE)
 ```
 
 # Wrap Up:

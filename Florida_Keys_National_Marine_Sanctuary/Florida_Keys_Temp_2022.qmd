@@ -1,0 +1,219 @@
+---
+title: "Florida_Keys_Temp_2022"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Florida Keys National Marine Sanctuary
+
+### Author- Madison Enda, February 5th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script, we will be combining all 2022 temperature files from the Florida Key National Marine Sancturay: pulling them off of the FWRI Coral Research Program's shared drive and creating an index to be used as our primary key for the 'Temperature' table in the upcoming database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folder was downloaded manually to my device, and thus my file path is unique to my device.
+
+-   This workflow will include general cleaning (standardizing naming conventions, removing superfluous data, etc.) and the final result will be uploaded to the shared drive once again, until permissions are received to migrate to a new platform.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate)
+```
+
+## Loading in the .xlsx files
+
+```{r}
+# Grab file path where master files are
+folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/2022"
+
+# List all .csv files
+file_list <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
+```
+
+## Read the files into a single data frame
+
+```{r}
+# Use the purrr package to apply read_excel to all files
+df_list <- suppressWarnings(purrr::map(file_list, read_csv)) # I suppressed warnings as it warned me that every date did not come in date format lol
+
+# Combine using bind_rows since same columns exist
+combined_temp <- bind_rows(df_list)
+```
+
+## View the combined data frame
+
+```{r}
+# Get some stats about our new data frame:
+
+# Number of columns and number of rows
+cat("Rows:", nrow(combined_temp), "Columns:", ncol(combined_temp), "\n")
+
+# Take a look at the bottom of the df
+tail(combined_temp)
+```
+
+
+# Check to see if empty additional columns have any data
+
+```{r}
+# Look for the sum of all NA values in each row
+colSums(is.na(combined_temp))
+```
+- Ok, so there are some NA values in the core 6 columns, but also some actual results in the additional columns. Let's separate them out and combine them again once they are clean
+
+```{r}
+# Select the added columns
+extra_columns <- combined_temp %>%
+  select(Date, Time, SiteName, SiteID, TempC, TempF, `...7`, `...8`) 
+
+# Select only relevant columns
+combined_temp <- combined_temp %>%
+  select(Date, Time, Sitename, Siteid, `Temp C`, `Temp F`)
+```
+
+- Now, we can analyze them separately
+
+```{r}
+# Remove columns ...7 and ...8
+extra_columns <- extra_columns %>%
+  select(Date, Time, SiteName, SiteID, TempC, TempF)
+
+# Find columns without NA values for the temperatures (either C or F)
+extra_columns_clean <- extra_columns %>%
+  filter(!is.na(TempC) | !is.na(TempF))
+
+# Use extra_columns_clean as our new df for the observations that will be added
+
+# Check the same thing for the main dataset
+combined_temp_clean <- combined_temp %>%
+  filter(!is.na(`Temp C`) | !is.na(`Temp F`))
+```
+
+- Let's rename the columns of the data sets, so we can bind them!
+
+```{r}
+# Rename the columns of both data sets
+combined_temp <- combined_temp_clean %>%
+  rename(
+    "date" = "Date",
+    "time" = "Time",
+    "site_name" = "Sitename",
+    "site_id" = "Siteid",
+    "temp_C" = "Temp C",
+    "temp_F" = "Temp F"
+  )
+
+# Rename the columns that will be added to the main data
+extra_columns_clean <- extra_columns_clean %>%
+  rename(
+    "date" = "Date",
+    "time" = "Time",
+    "site_name" = "SiteName",
+    "site_id" = "SiteID",
+    "temp_C" = "TempC",
+    "temp_F" = "TempF" 
+  )
+
+# Combine the two 2022 temp data frames
+fk_temp_2022 <- bind_rows(combined_temp, extra_columns_clean)
+```
+
+- Now we check to see which NA values are left over...
+
+```{r}
+# Look for the sum of all NA values in each row
+colSums(is.na(fk_temp_2022))
+```
+## Converting data types:
+
+- Nice! There are no NA values in our data set now. It's time to convert data types
+
+```{r}
+# Look at data types in the fk_temp_2022 data 
+str(fk_temp_2022)
+```
+
+### Converting dates using lubridate()
+
+```{r}
+# Find any erroneous dates by identifying odd patterns. We don't want to use unique() or distinct() here because that will return millions of characters lol
+date_patterns <- combined_temp %>%
+  mutate(
+    date_pattern = gsub("[0-9]", "D", date)
+  ) %>%
+  count(date_pattern, sort = TRUE)
+```
+
+-   There are 4 distinct patterns of date saved here, I will use their structure to convert them all to what we are looking for with the lubridate() package
+
+```{r}
+# Use lubridate::parse_date_time() function to get dates
+fk_temp_2022$date <- parse_date_time(
+  fk_temp_2022$date,
+  orders = c("mdy", "mdy HM", "mdy HMS")
+)
+```
+
+### Converting to hours, mins, secs in military time
+
+```{r}
+# Convert to integer before applying time
+fk_temp_2022$time <- as.integer(fk_temp_2022$time)
+
+# Convert the integer to a hour
+fk_temp_2022$time <- hms::hms(hours = fk_temp_2022$time)
+```
+
+### Converting site_id to integer
+
+```{r}
+# Set the siteid column as an integer
+fk_temp_2022$site_id <- as.integer(fk_temp_2022$site_id)
+```
+
+## Removing erroneous temperature values
+
+```{r}
+# Take the rows where the Temp F column has values higher than 92 degrees
+high_temp_rows <- fk_temp_2022 %>%
+  filter(temp_F > 90)
+
+# Take the rows where the Temp F column has values lower than 68 degrees
+low_temp_rows <- fk_temp_2022 %>%
+  filter(temp_F < 68)
+```
+
+- It appears as though all temperature values fall within the expected ranges for the Florida Keys. These csv files must have already been cleaned, which is great news! Now we can add an observation_id column and join the 2022 temp data to the 2002-2021 data.
+
+## Assigning a primary key: observation_id
+```{r}
+# Create a column called Observation_ID
+fk_temp_2022 <- fk_temp_2022 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+
+# Import the master temp data file
+florida_keys_master_2025 <- read_csv("Florida_Keys_National_Marine_Sanctuary/florida_keys_master_2025.csv")
+
+# Bind the rows together
+florida_keys_master_2025 <- bind_rows(florida_keys_master_2025, fk_temp_2022)
+```
+
+
+## Write the new csv file to current working directory
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(florida_keys_master_2025, "florida_keys_master_2025.csv", row.names = FALSE)
+```
+
+
+
+
