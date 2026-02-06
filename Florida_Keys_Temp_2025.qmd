@@ -1,6 +1,6 @@
 ---
-title: "Florida_Keys_Temp_2023"
-author: "Maddy"
+title: "Florida_Keys_Temp_2025"
+author: "Maddy Enda"
 format: html
 editor: visual
 ---
@@ -31,60 +31,73 @@ librarian::shelf(tidyverse, dplyr, here, purrr, hms, lubridate, stringr)
 
 ## Cleaning function:
 
+- First, let's get all the file names that we will be converting into site_names
+
+```{r}
+# List the files in the 2025 folder
+list.files(path = "c:/Users/Madison.Enda/Desktop/Temp_Data/2025")
+```
+_ Next, we create the cleaning function with the new files
+
 ```{r}
 # Function to clean the files
 
 # Lookup table for site names based on source_file
 site_lookup <- tibble(
   source_file = c(
-    "Admiral_22-23.csv",
-    "Alligator_Deep_22-23.csv",
-    "Alligator_Shallow_22-23.csv",
-    "Burr_Fish_22-23.csv",
-    "Carysfort_Deep_22-23.csv",
-    "Cliff_Green_22-23.csv",
-    "Conch_Deep_22-23.csv",
-    "Conch_Shallow_22-23.csv",
-    "Content_Keys_22-23.csv",
-    "Dove_22-23.csv",
-    "Dustan_Rocks_22-23.csv",
-    "East_Sambo_Shallow_22-23.csv",
-    "Eastern_Sambo_Deep_22-23.csv",
-    "El_Radabob_22-23.csv",
-    "Grecian_Rocks_22-23.csv",
-    "Jaap_22-23.csv",
-    "Long_Key_22-23.csv",
-    "Looe_Deep_22-23.csv",
-    "Looe_Shallow_22-23.csv",
-    "Molasses_Deep_22-23.csv",
-    "Molasses_Shallow_22-23.csv",
-    "Porter_Patch_22-23.csv",
-    "Rattlesnake_22-23.csv",
-    "Rawa_22-23.csv",
-    "Red_Dun_22-23.csv",
-    "Rock_Key_Deep_22-23.csv",
-    "Sand_Key_Deep_22-23.csv",
-    "Sand_Key_Shallow_22-23.csv",
-    "Smith_Shoal_22-23.csv",
-    "Sombrero_Deep_22-23.csv",
-    "Sombrero_Shallow_22-23.csv",
-    "Tennessee_Deep_22-23.csv",
-    "Thor_22-23.csv",
-    "Turtle_22-23.csv",
-    "Two_Patches_22-23.csv",
-    "West_Sambo_Deep_22-23.csv",
-    "West_Sambo_Shallow_22-23.csv",
-    "West_Turtle_Shoal_22-23.csv",
-    "West_Washerwoman_22-23.csv",
-    "Western_Head_22-23.csv",
-    "Wonderland_22-23.csv"
+  "Admiral_Off4_24-25.csv",
+  "AlligatorDp_Off3_24-25.csv",
+  "AlligatorSh_Off3_24-25.csv",
+  "Burr_Off1_24-25.csv",
+  "CarysfortDp_In1_24-25.csv",
+  "CarysfortSh_Off3_24-25.csv",
+  "Cliff_Off3_24-25.csv",
+  "ConchDp_Off3_24-25.csv",
+  "ConchSh_Off3_24-25.csv",
+  "Contents_Off3_24-25.csv",
+  "Dove_Off1_24-25.csv",
+  "Dustan_Off2_24-25.csv",
+  "ESamboDeep_Off2_24-25.csv",
+  "Grecian_In3_24-25.csv",
+  "Jaap_Off1_24-25.csv",
+  "Long_Off1_24-25.csv",
+  "LooeDeep_Off1_24-25.csv",
+  "LooeShallow_Off3_24-25.csv",
+  "MolassesDp_Off2_24-25.csv",
+  "MolassesSh_Off2_24-25.csv",
+  "Moser_Off1_24-25.csv",
+  "Porter_Off2_24-25.csv",
+  "Radabob_Off2_24-25.csv",
+  "Rattlesnake_Off1_24-25.csv",
+  "Rawa_Off1_24-25.csv",
+  "RedDun_Off1_24-25.csv",
+  "RockDeep_Off3_24-25.csv",
+  "RockShallow_Off4_24-25.csv",
+  "SandDeep_In2_24-25.csv",
+  "SandShallow_Off2_24-25.csv",
+  "Smith_Off3_24-25.csv",
+  "SombreroDeep_In1_24-25.csv",
+  "SombreroShallow_Off2_24-25.csv",
+  "Thor_Off2_24-25.csv",
+  "TNDeep_In2_24-25.csv",
+  "TNShallow_In2_24-25.csv",
+  "Turtle_Off1_24-25.csv",
+  "TwoPatches_Off2_24-25.csv",
+  "WHead_In2_24-25.csv",
+  "Wonderland_Off1_24-25.csv",
+  "WSamboDeep_Off1_24-25.csv",
+  "WSamboShallow_Off1_24-25.csv",
+  "WTurtle_Off2_24-25.csv",
+  "WWasher_Off3_24-25.csv"  
     ),
+  
   site_name = c(
      "Admiral",
      "Alligator Deep",
      "Alligator Shallow",
      "Burr Fish",
      "Carysfort Deep",
+     "Carysfort Shallow",
      "Cliff Green",
      "Conch Deep",
      "Conch Shallow",
@@ -92,8 +105,6 @@ site_lookup <- tibble(
      "Dove Key",
      "Dustan Rocks",
      "Eastern Sambo Deep",
-     "Eastern Sambo Shallow",
-     "El Radabob",
      "Grecian Rocks",
      "Jaap Reef",
      "Long Key",
@@ -101,26 +112,30 @@ site_lookup <- tibble(
      "Looe Key Shallow",
      "Molasses Deep",
      "Molasses Shallow",
-     "Port Patch",
+     "Moser Channel",
+     "Porter Patch",
+     "El Radabob",
      "Rattlesnake",
      "Rawa Reef",
      "Red Dun Reef",
      "Rock Key Deep",
+     "Rock Key Shallow",
      "Sand Key Deep",
      "Sand Key Shallow",
      "Smith Shoal",
      "Sombrero Deep",
      "Sombrero Shallow",
-     "Tennessee Deep",
      "Thor",
+     "Tennessee Deep",
+     "Tennessee Shallow",
      "Turtle",
      "Two Patches",
+     "Western Head",
+     "Wonderland",
      "Western Sambo Deep",
      "Western Sambo Shallow",
-      "West Turtle Shoal",
-     "West Washerwoman",
-     "Western Head",
-     "Wonderland"           
+     "West Turtle Shoal",
+     "West Washerwoman"
   )
 )
 
@@ -168,7 +183,7 @@ clean_temp_csv <- function(file_path, n_cols = 6, sep = ",") {
 
 ```{r}
 # Load in the date trim file created from deployment dates on the OneDrive
-florida_keys_temp_2023_dates <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/florida_keys_temp_2023_dates.csv")
+florida_keys_temp_2025_dates <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/florida_keys_temp_202_dates.csv")
 
 # Separate the dates and times
 
