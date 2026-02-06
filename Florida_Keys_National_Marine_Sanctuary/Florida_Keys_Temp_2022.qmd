@@ -59,14 +59,14 @@ cat("Rows:", nrow(combined_temp), "Columns:", ncol(combined_temp), "\n")
 tail(combined_temp)
 ```
 
-
 # Check to see if empty additional columns have any data
 
 ```{r}
 # Look for the sum of all NA values in each row
 colSums(is.na(combined_temp))
 ```
-- Ok, so there are some NA values in the core 6 columns, but also some actual results in the additional columns. Let's separate them out and combine them again once they are clean
+
+-   Ok, so there are some NA values in the core 6 columns, but also some actual results in the additional columns. Let's separate them out and combine them again once they are clean
 
 ```{r}
 # Select the added columns
@@ -78,7 +78,7 @@ combined_temp <- combined_temp %>%
   select(Date, Time, Sitename, Siteid, `Temp C`, `Temp F`)
 ```
 
-- Now, we can analyze them separately
+-   Now, we can analyze them separately
 
 ```{r}
 # Remove columns ...7 and ...8
@@ -96,7 +96,7 @@ combined_temp_clean <- combined_temp %>%
   filter(!is.na(`Temp C`) | !is.na(`Temp F`))
 ```
 
-- Let's rename the columns of the data sets, so we can bind them!
+-   Let's rename the columns of the data sets, so we can bind them!
 
 ```{r}
 # Rename the columns of both data sets
@@ -125,15 +125,16 @@ extra_columns_clean <- extra_columns_clean %>%
 fk_temp_2022 <- bind_rows(combined_temp, extra_columns_clean)
 ```
 
-- Now we check to see which NA values are left over...
+-   Now we check to see which NA values are left over...
 
 ```{r}
 # Look for the sum of all NA values in each row
 colSums(is.na(fk_temp_2022))
 ```
+
 ## Converting data types:
 
-- Nice! There are no NA values in our data set now. It's time to convert data types
+-   Nice! There are no NA values in our data set now. It's time to convert data types
 
 ```{r}
 # Look at data types in the fk_temp_2022 data 
@@ -190,9 +191,10 @@ low_temp_rows <- fk_temp_2022 %>%
   filter(temp_F < 68)
 ```
 
-- It appears as though all temperature values fall within the expected ranges for the Florida Keys. These csv files must have already been cleaned, which is great news! Now we can add an observation_id column and join the 2022 temp data to the 2002-2021 data.
+-   It appears as though all temperature values fall within the expected ranges for the Florida Keys. These csv files must have already been cleaned, which is great news! Now we can add an observation_id column and join the 2022 temp data to the 2002-2021 data.
 
 ## Assigning a primary key: observation_id
+
 ```{r}
 # Create a column called Observation_ID
 fk_temp_2022 <- fk_temp_2022 %>%
@@ -206,14 +208,9 @@ florida_keys_master_2025 <- read_csv("Florida_Keys_National_Marine_Sanctuary/flo
 florida_keys_master_2025 <- bind_rows(florida_keys_master_2025, fk_temp_2022)
 ```
 
-
 ## Write the new csv file to current working directory
 
 ```{r}
 # Write the final data frame to a csv in my current working directory
 write.csv(florida_keys_master_2025, "florida_keys_master_2025.csv", row.names = FALSE)
 ```
-
-
-
-

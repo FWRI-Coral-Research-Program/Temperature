@@ -163,3 +163,81 @@ clean_temp_csv <- function(file_path, n_cols = 6, sep = ",") {
   return(df)
 }
 ```
+
+
+
+## Trimming function: 
+
+```{r}
+# Load in the date trim file created from deployment dates on the OneDrive
+florida_keys_temp_2023_dates <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/florida_keys_temp_2023_dates.csv")
+
+# Separate the dates and times
+
+cleaning_dates <- florida_keys_temp_2023_dates %>%
+  mutate(
+    deployment_dt = mdy_hm(deployment_date, quiet = TRUE),
+    retrieval_dt  = mdy_hm(retrieval_date, quiet = TRUE)
+  ) %>%
+  mutate(
+    deployment_date = as.Date(deployment_dt),
+    deployment_time = hms::as_hms(deployment_dt),
+    retrieval_date  = as.Date(retrieval_dt),
+    retrieval_time  = hms::as_hms(retrieval_dt)
+  ) %>%
+  select(-deployment_dt, -retrieval_dt)
+
+# Create a trimming function based on this table
+trim_temp_csv <- function(cleaned_df, date_ranges_df) {
+  
+  date_ranges_df <- date_ranges_df %>%
+    mutate(
+      deploy_dt  = as.POSIXct(deployment_date) + deployment_time,
+      retrieve_dt = as.POSIXct(retrieval_date) + retrieval_time
+    ) %>%
+    select(site_name, deploy_dt, retrieve_dt)
+  
+  cleaned_df %>%
+    left_join(date_ranges_df, by = "site_name") %>%
+    filter(datetime >= deploy_dt, datetime <= retrieve_dt) %>%
+    select(-c(deploy_dt, retrieve_dt, datetime))
+}
+```
+
+
+## Time to load and trim the 2023 files!
+
+```{r}
+# OK, time to try them all!
+files <- list.files(
+  "C:/Users/Madison.enda/Desktop/Temp_Data/2023",
+  pattern = "\\.csv$", 
+  full.names = TRUE
+)
+
+fk_temp_2023 <- map_dfr(files, function(file) {
+  clean_temp_csv(file) %>% 
+    trim_temp_csv(cleaning_dates)
+})
+```
+
+
+## Check for anomalies?
+
+- It seems as though there is one anomalous temperature recording in May of 2022 that is extremely high for 1 hour (102.214 F), and then drops back to normal. I will be removing this value before we continue.
+
+```{r}
+# Remove the anomalous value from May of 2022
+fk_temp_2023 <- fk_temp_2023 %>%
+  filter(temp_F < 100)
+```
+
+## Write file as master list for 2023
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(fk_temp_2023, "florida_keys_temp_2023.csv", row.names = FALSE)
+```
+
+
+
