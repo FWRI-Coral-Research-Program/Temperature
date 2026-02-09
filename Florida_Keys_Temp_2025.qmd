@@ -238,6 +238,9 @@ fk_temp_2025 <- map_dfr(files, function(file) {
 ```{r}
 # Look for NA values
 colSums(is.na(fk_temp_2025))
+
+# Look at data types
+str(fk_temp_2025)
 ```
 
 ## Write file as master list for 2023
