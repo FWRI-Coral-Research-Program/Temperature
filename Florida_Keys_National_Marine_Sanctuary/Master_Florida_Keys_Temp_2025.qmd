@@ -1,0 +1,163 @@
+---
+title: "Master_Florida_Keys_Temp_2025"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Florida Keys National Marine Sanctuary Master File Creation
+
+### Author- Madison Enda, February 9th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script, we create the final florida_keys_master_2025.csv file, with cleaned and updated information from 2002-2025. The data was all pulled from the FWRI Coral Research Program's sharepoint drive, and was joined and standardized in the other scripts in this repository. Therefore, we will be joining the 2023, 2024, and 2025 master files to the florida_keys_master_2025.csv, checking for temperature anomalies, and then exporting to this device, and then the organization's drive until such a time as we have permissions to upload it to a server.
+
+## Load libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, purrr, hms, stringr)
+```
+
+-   First, let's load in the large master file for all years: florida_keys_master_2025.csv
+
+```{r}
+# Import the master file from this working directory
+florida_keys_master_2025 <- read_csv("florida_keys_master_2025.csv")
+```
+
+
+## Combine the 2023, 2024, and 2025 data
+
+```{r}
+# Import the 2023 file
+fk_temp_2023 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/Temperature/Florida_Keys_National_Marine_Sanctuary/florida_keys_temp_2023.csv")
+
+# Import the 2024 file
+fk_temp_2024 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/Temperature/Florida_Keys_National_Marine_Sanctuary/florida_keys_temp_2024.csv")
+
+# Import the 2025 file
+fk_temp_2025 <- read_csv("C:/Users/Madison.enda/Desktop/Temp_Data/Temperature/Florida_Keys_National_Marine_Sanctuary/florida_keys_temp_2025.csv")
+
+# Combine the 2024 and 2025 data sets
+fk_temp_2023_2025 <- bind_rows(fk_temp_2023, fk_temp_2024, fk_temp_2025)
+```
+
+## Check for structural integrity and NAs
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(fk_temp_2023_2025))
+```
+
+## Add a site_id column and populate with NAs to fill later with a case_when()
+
+```{r}
+# Create a site_id column that is just NAs
+fk_temp_2023_2025 <- fk_temp_2023_2025 %>%
+  mutate(site_id = NA)
+```
+
+# Bring together the 2023-2025 data and the master list
+
+-   It's finally time to bring it all together! We will bind the master list to the 2024 and 2025 data, then fill the missing values in site_id (should be 207,545) with the corresponding values using site_name. Then we recreate the observation_id column, run through our final checks, and it's done!
+
+```{r}
+# Use bind_rows to join the data
+florida_keys_master_2025 <- bind_rows(florida_keys_master_2025, fk_temp_2023_2025)
+```
+
+-   Now, let's take a look at our structure and types
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(florida_keys_master_2025))
+
+# Look at column names
+colnames(florida_keys_master_2025)
+
+# Identify data types
+str(florida_keys_master_2025)
+```
+
+## Fill the NA values in site ID
+
+-   First, we will identify all relevant site names, and correct any misspellings
+
+```{r}
+sort(unique(florida_keys_master_2025$site_name))
+```
+
+```{r}
+# Replace misspellings
+florida_keys_master_2025$site_name <- str_replace_all(florida_keys_master_2025$site_name, c(
+  "West Washer Women" = "West Washerwoman",
+  "Jaap Reef Reef" = "Jaap Reef",
+  "Port Patch" = "Porter Patch",
+  "Pamlata Patch" = "Palmata Patch",
+  "Sobrero Shallow" = "Sombrero Shallow",
+  "Red Dunn" = "Red Dun Reef",
+  "BurrFish" = "Burr Fish",
+  "Smit Shoal" = "Smith Shoal"
+))
+```
+
+-   Now that we have all sites, we need to fill the empty NA in site_id with the corresponding value for each site_name
+
+```{r}
+# Group by site_name and fill with site_id value
+florida_keys_master_2025 <- florida_keys_master_2025 %>%
+  group_by(site_name) %>%
+  mutate(site_id = coalesce(site_id, first(site_id[!is.na(site_id)]))) %>%
+  ungroup()
+```
+
+-   Now let's check for any remaining NA values in any column
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(florida_keys_master_2025))
+
+# Look at column names
+colnames(florida_keys_master_2025)
+
+# Identify data types
+str(florida_keys_master_2025)
+```
+
+## Reassign character types and create new observtion_id
+
+```{r}
+# Set the site_id column as an integer
+florida_keys_master_2025$site_id <- as.integer(florida_keys_master_2025$site_id)
+
+# Set the observation_id column as an integer
+florida_keys_master_2025$observation_id <- as.integer(florida_keys_master_2025$observation_id)
+
+# Recount the observation_id column
+florida_keys_master_2025 <- florida_keys_master_2025 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) %>% # oldest value gets id of 1
+  select(observation_id, everything()) # moves observation_id to be the first column
+```
+
+## Final Cleaning for the 2025 Dry Tortugas Temperature Data
+
+```{r}
+# Look at the minimum and maximum temperatures
+max(florida_keys_master_2025$temp_F)
+min(florida_keys_master_2025$temp_F)
+```
+
+## Save the final file!
+
+```{r}
+# Write our final file to my current working directory
+write.csv(florida_keys_master_2025, "florida_keys_master_2025.csv", row.names = FALSE)
+```
