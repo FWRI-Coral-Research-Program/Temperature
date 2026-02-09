@@ -1,0 +1,181 @@
+---
+title: "Investigating_Florida_Keys_Temp_2025"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Investigating the Florida Keys Temperature Data- 2025 Master List
+
+### Author: Maddy Enda
+
+### Written: February 9th, 2026
+
+## Overview:
+
+-   The 2025 Florida Keys Temperature data set was compiled in January of 2026 as a part of a database management project. The data, collected from HoboWare autonomous sensors placed on each survey site in the Florida Keys, was aggregated from the FWRI Coral Research Program's One Drive.
+
+-   In this script, we will be looking through the data, performing basic summary statistics and visualizations to ensure data was collected and cleaned correctly before continuing with other data sets.
+
+## Import Libraries
+
+```{r}
+# Use the librarian package to import many libraries at once'
+librarian::shelf(tidyverse,
+                 dplyr,
+                 here,
+                 hms,
+                 purrr,
+                 ggplot2,
+                 gt,
+                 lubridate,
+                 plotly)
+```
+
+## Load in the dry tortugas temperature file
+
+```{r}
+# Import the master file temperature csv for 2025
+florida_keys_master_2025 <- read_csv("florida_keys_master_2025.csv")
+```
+
+## Investigate data
+
+```{r}
+# Create summary statistics using summarise()
+ summary_table <- florida_keys_master_2025%>%
+   mutate(year = lubridate::year(date)) %>%
+  group_by(year) %>%
+  summarise(
+    mean_temp   = mean(temp_F, na.rm = TRUE),
+    median_temp = median(temp_F, na.rm = TRUE),
+    sd_temp     = sd(temp_F, na.rm = TRUE),
+    min_temp    = min(temp_F, na.rm = TRUE),
+    max_temp    = max(temp_F, na.rm = TRUE),
+    n_obs       = n()
+  )
+
+# Display table using
+summary_table %>%
+  gt() %>%
+  fmt_number(
+    columns = -year,
+    decimals = 2
+  ) %>%
+   tab_options(
+    table.font.color = "black",
+    data_row.padding = px(12),
+    column_labels.padding = px(12)
+  ) %>%
+  tab_header(
+    title = "Florida Keys Annual Temperature Summary",
+    subtitle = "Temperature in Degrees Fahrenheit by Year"
+  )
+```
+
+## Check for data record discrepancies beyond a 48 observation daily sample (accidentally set to twice per hour sample):
+
+```{r}
+# Check daily counts
+daily_counts <- florida_keys_master_2025 %>%
+  mutate(year = year(date)) %>%
+  group_by(year, site_id, site_name, date) %>%
+  summarise(
+    n_obs = n(),
+    .groups = "drop"
+  )
+
+# Let's find our problem days, that are not equal to 24
+problem_days <- daily_counts %>%
+  filter(n_obs != 24) %>%
+  arrange(year, site_id, site_name, date)
+
+# Check what the max number of extra hours is
+problem_summary <- problem_days %>%
+  group_by(year, site_id, site_name) %>%
+  summarise(
+    n_bad_days = n(),
+    min_obs = min(n_obs),
+    max_obs = max(n_obs),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_bad_days))
+```
+
+## Assessing the issue:
+
+There appears to be a few days here and there where loggers either malfunctioned, died, or were lost. It is difficult to say which events correspond to which discrepancies, as we do not have in depth records going back to 2002. However, there also seems to be a grouping error where some observations are not being grouped by day.
+
+I am also seeing some weird date patterns in the 2017 and 2018 data. Let's check our patterns
+
+```{r}
+# Find any erroneous dates by identifying odd patterns. We don't want to use unique() or distinct() here because that will return millions of characters lol
+date_patterns <- florida_keys_master_2025 %>%
+  mutate(
+    date_pattern = gsub("[0-9]", "D", date)
+  ) %>%
+  count(date_pattern, sort = TRUE)
+
+# Filter to the observations with the strange date-time format
+odd_date_formats <- florida_keys_master_2025 %>%
+  filter(grepl(
+    "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$",
+    date
+  ))
+```
+
+It looks like each observation has a corresponding time in the correct format, so we can remove the additional info in the date column and move forward
+
+```{r}
+# Remove time information from the 4,382 rows with issues
+florida_keys_master_2025 <- florida_keys_master_2025 %>%
+  mutate(
+    date = as.Date(substr(date, 1, 10))
+  )
+```
+
+- Awesome! Re-running the date_pattern code above shows us that we only have one pattern type now: DDDD-DD-DD. 
+Now, I will re-run the odd_dates check, to see how many observations we have per unique date now.
+
+## Fixing an ID error:
+
+- After re-running the odd_dates and problem_days code, I have found that there is one location that is still not having its daily observations grouped properly: Red Dun Reef. This seems to be because there are many site_ids listed for the same location. I will do a quite re-write for the true site ID according to the metadata.
+
+```{r}
+# Fix the inconsistencies with Red Dun Reef ID
+florida_keys_master_2025 <- florida_keys_master_2025 %>%
+  mutate(
+    site_id = if_else(site_name == "Red Dun Reef", 26, site_id)
+  )
+```
+
+- Alright, we now have all observations properly grouped, with no amount of observations per day over 48, so we can continue with our analysis.
+
+## Visualizing!
+
+```{r}
+# Example data frame: df
+# Columns: observation_id, date, time, site_name, site_id, temp_C, temp_F
+p <- ggplot(florida_keys_master_2025, aes(x = date, y = temp_F, 
+                    group = site_name,   # group by site
+                    color = site_name,   # color lines by site
+                    text = paste(
+                      "Site ID:", site_id,
+                      "<br>Site Name:", site_name,
+                      "<br>Temp (F):", temp_F,
+                      "<br>Date:", date,
+                      "<br>Time:", time
+                    ))) +
+  geom_line() +
+  geom_point(alpha = 0.5) +  # points help with hover
+  labs(
+    x = "Date",
+    y = "Temperature (F)",
+    title = "Temperature over Time by Site"
+  ) +
+  theme_minimal()
+
+# Make it interactive
+ggplotly(p)
+
+```

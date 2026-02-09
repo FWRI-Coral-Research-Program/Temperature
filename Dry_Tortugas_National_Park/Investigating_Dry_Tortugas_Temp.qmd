@@ -75,7 +75,7 @@ summary_table %>%
 
 -   OK, so after checking with the original scripts, its looking like 2022-2025 are the only ones where observation counts could be amiss. I will look into how these numbers got to be so inflated. My guess is that its a trimming issue in relation to when loggers were deployed, picked-up, and actually turned off.
 
-- I will now see how many unique dates are recorded per year, just to ensure that no location has been sampled more frequently than it should have been.
+-   I will now see how many unique dates are recorded per year, just to ensure that no location has been sampled more frequently than it should have been.
 
 ```{r}
 # Check daily counts
@@ -104,14 +104,11 @@ problem_summary <- problem_days %>%
   arrange(desc(n_bad_days))
 ```
 
-
 ## Assessing the issue:
 
 After a lengthy investigation, and trimming the 2022-2025 data with the updated logger deployment windows, the additional data comes from loggers recording more than the typical once per hour over a 24 hour period, or less due to logger loss, low battery, etc.
 
-
 However, this all seems within the bound of possibility, and we cab therefore move forward with this data!
-
 
 ## Visualizing!
 
@@ -141,5 +138,3 @@ p <- ggplot(dry_tortugas_master_2025, aes(x = date, y = temp_F,
 plot(p)
 
 ```
-
-
