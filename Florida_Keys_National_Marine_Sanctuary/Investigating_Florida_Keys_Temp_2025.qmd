@@ -149,33 +149,13 @@ florida_keys_master_2025 <- florida_keys_master_2025 %>%
   )
 ```
 
-- Alright, we now have all observations properly grouped, with no amount of observations per day over 48, so we can continue with our analysis.
+- Alright, we now have all observations properly grouped, with no amount of observations per day over 48, so we can continue with our analysis, and write the final florida_keys_temp_2025 master file
 
-## Visualizing!
+## Write the 2025 Florida Keys master file!
 
 ```{r}
-# Example data frame: df
-# Columns: observation_id, date, time, site_name, site_id, temp_C, temp_F
-p <- ggplot(florida_keys_master_2025, aes(x = date, y = temp_F, 
-                    group = site_name,   # group by site
-                    color = site_name,   # color lines by site
-                    text = paste(
-                      "Site ID:", site_id,
-                      "<br>Site Name:", site_name,
-                      "<br>Temp (F):", temp_F,
-                      "<br>Date:", date,
-                      "<br>Time:", time
-                    ))) +
-  geom_line() +
-  geom_point(alpha = 0.5) +  # points help with hover
-  labs(
-    x = "Date",
-    y = "Temperature (F)",
-    title = "Temperature over Time by Site"
-  ) +
-  theme_minimal()
-
-# Make it interactive
-ggplotly(p)
-
+# Write our final file to my current working directory
+write.csv(florida_keys_master_2025, "florida_keys_master_2025.csv", row.names = FALSE)
 ```
+
+

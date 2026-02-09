@@ -32,7 +32,6 @@ librarian::shelf(tidyverse, dplyr, here, purrr, hms, stringr)
 florida_keys_master_2025 <- read_csv("florida_keys_master_2025.csv")
 ```
 
-
 ## Combine the 2023, 2024, and 2025 data
 
 ```{r}
