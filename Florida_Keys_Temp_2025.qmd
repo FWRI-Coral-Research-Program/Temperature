@@ -183,11 +183,11 @@ clean_temp_csv <- function(file_path, n_cols = 6, sep = ",") {
 
 ```{r}
 # Load in the date trim file created from deployment dates on the OneDrive
-florida_keys_temp_2025_dates <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/florida_keys_temp_202_dates.csv")
+florida_keys_temp_2025_dates <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/florida_keys_temp_2025_dates.csv")
 
 # Separate the dates and times
 
-cleaning_dates <- florida_keys_temp_2023_dates %>%
+cleaning_dates <- florida_keys_temp_2025_dates %>%
   mutate(
     deployment_dt = mdy_hm(deployment_date, quiet = TRUE),
     retrieval_dt  = mdy_hm(retrieval_date, quiet = TRUE)
@@ -222,12 +222,12 @@ trim_temp_csv <- function(cleaned_df, date_ranges_df) {
 ```{r}
 # OK, time to try them all!
 files <- list.files(
-  "C:/Users/Madison.enda/Desktop/Temp_Data/2023",
+  "C:/Users/Madison.enda/Desktop/Temp_Data/2025",
   pattern = "\\.csv$", 
   full.names = TRUE
 )
 
-fk_temp_2023 <- map_dfr(files, function(file) {
+fk_temp_2025 <- map_dfr(files, function(file) {
   clean_temp_csv(file) %>% 
     trim_temp_csv(cleaning_dates)
 })
@@ -235,17 +235,14 @@ fk_temp_2023 <- map_dfr(files, function(file) {
 
 ## Check for anomalies?
 
--   It seems as though there is one anomalous temperature recording in May of 2022 that is extremely high for 1 hour (102.214 F), and then drops back to normal. I will be removing this value before we continue.
-
 ```{r}
-# Remove the anomalous value from May of 2022
-fk_temp_2023 <- fk_temp_2023 %>%
-  filter(temp_F < 100)
+# Look for NA values
+colSums(is.na(fk_temp_2025))
 ```
 
 ## Write file as master list for 2023
 
 ```{r}
 # Write the final data frame to a csv in my current working directory
-write.csv(fk_temp_2023, "florida_keys_temp_2023.csv", row.names = FALSE)
+write.csv(fk_temp_2025, "florida_keys_temp_2025.csv", row.names = FALSE)
 ```
