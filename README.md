@@ -2,7 +2,7 @@
 
 ## Overview:
 
-This repository will contains all scripts used to clean and standardize the Coral Researh Program's temperature data from autonomous logging devices installed in Southern Florida, the Florida Keys, and Dry Tortugas National Park. The scripts will edit raw temperature data from HoboWare (in the form of csv files), intermediate temperature products, and master lists of all observations in a given year from all sites or a selection thereof.
+This repository will contains all scripts used to clean and standardize the Coral Research Program's temperature data from autonomous logging devices installed in Southern Florida, the Florida Keys, and Dry Tortugas National Park. The scripts will edit raw temperature data from HoboWare (in the form of csv files), intermediate temperature products, and master lists of all observations in a given year from all sites or a selection thereof.
 
 ## The Program:
 
