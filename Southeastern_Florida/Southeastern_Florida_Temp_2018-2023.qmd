@@ -1,0 +1,75 @@
+---
+title: "Southeastern_Florida_Temp_2018-2023"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Southeastern Florida
+
+### Author- Madison Enda, February 10th, 2026
+
+### Contact- madison.enda@myfwc.com
+
+## Overview:
+
+-   In this script, we will be combining all "master list" temperature files (in .xlsx format) off of the FWRI Coral Research Program's shared drive, and creating an index to be used as our primary key for the 'Temperature' table in the upcoming database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folder was downloaded manually to my device, and thus my file path is unique to my device.
+
+-   This workflow will include general cleaning (standardizing naming conventions, removing superfluous data, etc.) and the final result will be uploaded to the shared drive once again, until permissions are received to migrate to a new platform.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
+```
+
+## Loading in the .csv files
+
+```{r}
+# Grab file path where master files are
+folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/SECREMP_Master_Files/temp_2018-2022"
+
+# List all .csv files
+file_list <- list.files(path = folder_path, pattern = "\\.csv$", full.names = TRUE)
+```
+
+## Read the files into a single data frame
+
+```{r}
+# Combine the files into a list that will be read using UTF-8 encoding, as I was getting some errors from the 2022, 2020, and 2018 files
+df_list <- purrr::map(
+  file_list,
+  ~ readr::read_csv(
+      .x,
+      locale = locale(encoding = "Latin1"),
+      col_types = cols(Time = col_character())
+    )
+)
+# Combine using bind_rows since same columns exist
+combined_temp <- bind_rows(df_list)
+```
+
+## View the combined data frame
+
+```{r}
+# Get some stats about our new data frame:
+
+# Number of columns and number of rows
+cat("Rows:", nrow(combined_temp), "Columns:", ncol(combined_temp), "\n")
+
+# Take a look at the bottom of the df
+tail(combined_temp)
+```
+
+## check the number of NA values in each column
+
+```{r}
+# Look at the total number of NA values in each column
+colSums(is.na(combined_temp))
+```
+
+- It seems as though some of the files had 

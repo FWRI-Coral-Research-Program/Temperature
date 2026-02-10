@@ -27,7 +27,7 @@ editor: visual
 librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
 ```
 
-## Loading in the .xlsx files
+## Loading in the .csv files
 
 ```{r}
 # Grab file path where master files are
