@@ -1,0 +1,173 @@
+---
+title: "Southeastern_Florida_Temp"
+author: "Maddy Enda"
+date: 02/10/2026
+format: html
+execute: 
+  echo: false
+  eval: false
+  warning: false
+editor: visual
+---
+
+# Temperature Data 2026 Update: Dry Tortugas National Park
+
+### Author- Madison Enda, February 10th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script, we will be combining all "master list" temperature files (in .xlsx format) for the Southeastern Florida sites off of the FWRI Coral Research Program's shared drive, and creating an index to be used as our primary key for the 'Temperature' table in the upcoming database. For ease of access (and to avoid syncing with SharePoint which proved to take some time),the folder was downloaded manually to my device, and thus my file path is unique to my device.
+
+-   This workflow will include general cleaning (standardizing naming conventions, removing superfluous data, etc.) and the final result will be uploaded to the shared drive once again, until permissions are received to migrate to a new platform.
+
+## Import Libraries
+
+```{r}
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms)
+```
+
+## Loading in the .xlsx files
+
+```{r}
+# Grab file path where master files are
+folder_path <- "C:/Users/Madison.enda/Desktop/Temp_Data/SECREMP_Master_Files"
+
+# List all .xlsx files
+file_list <- list.files(path = folder_path, pattern = "\\.xlsx$", full.names = TRUE)
+```
+
+## Read the files into a single data frame
+
+```{r}
+# Use the purrr package to apply read_excel to all files
+df_list <- suppressWarnings(purrr::map(file_list, read_excel)) # I suppressed warnings as it warned me that every date did not come in date format lol
+
+# Combine using bind_rows since same columns exist
+combined_temp <- bind_rows(df_list)
+```
+
+## View the combined data frame
+
+```{r}
+# Get some stats about our new data frame:
+
+# Number of columns and number of rows
+cat("Rows:", nrow(combined_temp), "Columns:", ncol(combined_temp), "\n")
+
+# Take a look at the bottom of the df
+tail(combined_temp)
+```
+
+## Ensure all columns have data in correct type and format
+
+```{r}
+# Use str to inspect the column name, type, and format
+str(combined_temp)
+```
+- Our date is in the correct format, but the time is still numeric, and will need to be converted to military time.
+
+
+## Converting to hours, mins, secs in military time
+
+```{r}
+# Convert to integer before applying time
+combined_temp$Time <- as.integer(combined_temp$Time)
+
+# Convert the integer to a hour
+combined_temp$Time <- hms::hms(hours = combined_temp$Time)
+```
+
+## Converting site_id to integer
+
+```{r}
+# Set the siteid column as an integer
+combined_temp$siteid <- as.integer(combined_temp$siteid)
+```
+
+## Check one last time to see if type changes worked
+
+```{r}
+# Use str to inspect the column name, type, and format
+str(combined_temp)
+```
+
+## Ensure we have no missing data or other such issues
+
+```{r}
+# Find the sum of all NA values in each column
+colSums(is.na(combined_temp))
+```
+
+```{r}
+# Check to see if the highest and lowest temps make sense
+max(combined_temp$`Temp F`)
+min(combined_temp$`Temp F`)
+```
+- We appear to have some insanely high temperatures that will need to be cleaned
+
+
+## Find erroneous temperature values
+
+```{r}
+# Take the rows where the Temp F column has values higher than 101 degrees
+high_temp_rows <- combined_temp %>%
+  filter(`Temp F` > 95)
+
+# Take the rows where the Temp F column has values lower than 68 degrees
+low_temp_rows <- combined_temp %>%
+  filter(`Temp F` < 55)
+```
+
+-   There are only 3 temperature anomalies over 95 degrees, and all are way higher than would be logical for those reasons(101-165), and therefore will be removed.
+
+- The low temperatures in Dade county correspond with the 2010 cold snaps. As the southernmost county, these observations are plausible and will not be filtered.
+
+```{r}
+# Remove extraneous values
+filtered_temp <- combined_temp %>%
+  filter(`Temp F` < 95 )
+```
+
+## Assigning a primary key: observation ID
+
+```{r}
+# Create a column called Observation_ID
+filtered_temp <- filtered_temp %>%
+  arrange(Date) %>% # oldest → newest
+  mutate(Observation_ID = row_number()) # oldest value gets ID = 1
+```
+
+## Cleaning Names & Exporting
+
+```{r}
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
+southeastern_florida_master_2025 <- filtered_temp %>%
+  rename(
+    observation_id = Observation_ID,
+    date = Date,
+    time = Time,
+    site = Site,
+    site_id = siteid,
+    temp_C = `Temp C`,
+    temp_F = `Temp F`,
+    region = Region,
+    habitat = Habitat,
+    station = Station
+  )
+```
+
+-   I now have a cleaned data frame of temperature from 2007-2017, we can export this. Normally, I would export directly to a server or database, but we unfortunately do not have this set up at the moment, so it will be saved in my current working directory, where the files were drawn from in the beginning.
+
+## Write the final csv
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(southeastern_florida_master_2025, "southeastern_florida_master_2025.csv", row.names = FALSE)
+```
+
+# Wrap Up:
+
+I will be adding other master csv files to this "southeastern_florida_master_2025.csv", until we have it updated with all our data through 2025. However, while some years have master xlsx or csv files, some do not have master lists available on the same drive, and therefore I will have to build those out before adding them.

@@ -157,5 +157,3 @@ florida_keys_master_2025 <- florida_keys_master_2025 %>%
 # Write our final file to my current working directory
 write.csv(florida_keys_master_2025, "florida_keys_master_2025.csv", row.names = FALSE)
 ```
-
-
