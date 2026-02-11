@@ -17,7 +17,7 @@ Here is the current list of sites that have either historic or ongoing temperatu
 ## Metadata:
 
 | **Variable** | Data Type/Unit | **Description** |
-|------------------|---------------------------|---------------------------|
+|----|----|----|
 | observation_id | Integer | Unique identifier for each individual observation that is recorded |
 | date | Date (yyyy-mm-dd) | The date the measurement was recorded on site |
 | time | HMS object (standard military time/ 00:00:00) | The time of day that the measurement was recorded on site |
