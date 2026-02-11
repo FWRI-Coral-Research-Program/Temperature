@@ -9,7 +9,7 @@ editor: visual
 
 ### Author- Madison Enda, February 10th, 2026
 
-### Contact- madison.enda@myfwc.com
+### Contact- madison.enda\@myfwc.com
 
 ## Overview:
 
@@ -72,4 +72,12 @@ tail(combined_temp)
 colSums(is.na(combined_temp))
 ```
 
-- It seems as though some of the files had 
+-   It seems as though some of the files have data in only half of the columns. I'm going to try and group the data together
+
+## Get all the data in the columns Date, Time Temp c, Site, StationID
+
+```{r}
+# Select where Date is not NA
+noncremp_format_data <- combined_temp %>%
+  filter(!is.na(Year))
+```

@@ -67,8 +67,8 @@ tail(combined_temp)
 # Use str to inspect the column name, type, and format
 str(combined_temp)
 ```
-- Our date is in the correct format, but the time is still numeric, and will need to be converted to military time.
 
+-   Our date is in the correct format, but the time is still numeric, and will need to be converted to military time.
 
 ## Converting to hours, mins, secs in military time
 
@@ -106,8 +106,8 @@ colSums(is.na(combined_temp))
 max(combined_temp$`Temp F`)
 min(combined_temp$`Temp F`)
 ```
-- We appear to have some insanely high temperatures that will need to be cleaned
 
+-   We appear to have some insanely high temperatures that will need to be cleaned
 
 ## Find erroneous temperature values
 
@@ -123,7 +123,7 @@ low_temp_rows <- combined_temp %>%
 
 -   There are only 3 temperature anomalies over 95 degrees, and all are way higher than would be logical for those reasons(101-165), and therefore will be removed.
 
-- The low temperatures in Dade county correspond with the 2010 cold snaps. As the southernmost county, these observations are plausible and will not be filtered.
+-   The low temperatures in Dade county correspond with the 2010 cold snaps. As the southernmost county, these observations are plausible and will not be filtered.
 
 ```{r}
 # Remove extraneous values

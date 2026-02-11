@@ -1,0 +1,107 @@
+---
+title: "Southeastern_Florida_Temp_2018"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Southeastern Florida
+
+### Author- Madison Enda, February 11th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script, we will be cleaning the SECREMP 2018 temperature data, and compiled from individual site temperature files.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
+```
+
+## Loading in the .csv files
+
+```{r}
+secremp_2017_2018 <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/SECREMP_Master_Files/temp_2018-2022/SECREMP_1718_Temperature.csv")
+```
+
+The columns that we are looking to make in order to be standardized with the CREMP data are: - date - time - temp_C - temp_F - site - site_id - region - habitat - station - observation_id
+
+First, let's convert our Year, Month, and Day columns into a date column!
+
+### Creating a date column
+
+```{r}
+# Make a date column from Year, Month, and Day
+secremp_2017_2018$date <- make_date(secremp_2017_2018$Year, secremp_2017_2018$Month, secremp_2017_2018$Day)
+
+# Remove the Year, Month, Day columns
+secremp_2017_2018 <- secremp_2017_2018 %>%
+  select(-c(Year, Month, Day))
+```
+
+### Make the time column an hour in military format
+
+```{r}
+# Convert to integer before applying time
+secremp_2017_2018$Time <- as.integer(secremp_2017_2018$Time)
+
+# Convert the integer to a hour
+secremp_2017_2018$Time <- hms::hms(hours = secremp_2017_2018$Time)
+```
+
+### Rename the columns
+
+```{r}
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
+secremp_2017_2018 <- secremp_2017_2018 %>%
+  rename(
+    time = Time,
+    site = Site,
+    temp_C = TempC,
+    temp_F = TempF,
+    station_id = StationID
+  )
+```
+
+### Assigning a primary key: observation_id
+
+```{r}
+# Create a column called Observation_ID
+secremp_2017_2018 <- secremp_2017_2018 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+
+# Reorder the columns in the dataframe
+secremp_2017_2018 <- secremp_2017_2018 %>%
+  select(observation_id, date, everything())
+```
+
+```{r}
+colSums(is.na(secremp_2017_2018))
+```
+
+### Filter out erroneous data:
+
+There appear to be three observations where the temperature in Celsius is missing and for some reason Fahrenheit is 32 degrees. This seems very wrong, so I will be removing these values.
+
+The highest temperature of 95 degrees was recorded a couple of hours before that logger is recorded as being picked up, in the afternoon/early evening of June 28th, 2017. Therefore that value will be kept in.
+
+```{r}
+# Remove the odd freezing values
+secremp_2017_2018 <- secremp_2017_2018 %>%
+  filter(temp_F > 32)
+```
+
+### Write the file to our current working directory'
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(secremp_2017_2018, "southeastern_florida_temp_2017_2018.csv", row.names = FALSE)
+```
