@@ -1,0 +1,94 @@
+---
+title: "Southeastern_Florida_Temp_2021"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Southeastern Florida
+
+### Author- Madison Enda, February 11th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   In this script, we will be cleaning the SECREMP 2021 temperature data, and compiled from individual site temperature files.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
+```
+
+## Loading in the .csv files
+
+```{r}
+secremp_temp_2021 <- read_csv(
+  "C:/Users/Madison.Enda/Desktop/Temp_Data/SECREMP_Master_Files/temp_2018-2022/SETEMP_2021.csv")
+```
+
+### Cleaning the data set
+
+```{r}
+# Remove the extra columns
+secremp_temp_2021 <- secremp_temp_2021 %>%
+  select(-c(Year, Month, Day, Sort, Time...7, ))
+```
+
+### Check data types
+
+```{r}
+# Look at our data types using str()
+str(secremp_temp_2021)
+```
+
+### Convert the date column to date data types
+
+```{r}
+# Make the date column a date object
+secremp_temp_2021$Date <- mdy(secremp_temp_2021$Date)
+```
+
+
+### Change column names for standardization
+
+```{r}
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
+secremp_temp_2021 <- secremp_temp_2021 %>%
+  rename(
+    date = Date,
+    time = Time...6,
+    temp_C = TempC,
+    temp_F = TempF,
+    site = Site,
+    station_id = StationID
+  )
+
+# Create a column called Observation_ID
+secremp_temp_2021 <- secremp_temp_2021 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+
+# Reorder the columns in the dataframe
+secremp_temp_2021 <- secremp_temp_2021 %>%
+  select(observation_id, date, time, temp_C, temp_F, site, station_id)
+```
+
+```{r}
+# Check for any NA values
+colSums(is.na(secremp_temp_2021))
+```
+
+### Write the file to our current working directory'
+
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(secremp_temp_2021, "southeastern_florida_temp_2020_2021.csv", row.names = FALSE)
+```
+
+
