@@ -1,5 +1,5 @@
 ---
-title: "Southeastern_Florida_Temp_2019"
+title: "Southeastern_Florida_Temp_2022"
 author: "Maddy Enda"
 format: html
 editor: visual
@@ -7,13 +7,13 @@ editor: visual
 
 # Temperature Data 2026 Update: Southeastern Florida
 
-### Author- Madison Enda, February 11th, 2026
+### Author- Madison Enda, February 12th, 2026
 
 ### Contact- madison.enda\@myfwc.com
 
 ## Overview:
 
--   In this script, we will be cleaning the SECREMP 2019 temperature data, and compiled from individual site temperature files.
+-   In this script, we will be cleaning the SECREMP 2022 temperature data, and compiled from individual site temperature files.
 
 ## Import Libraries
 
@@ -28,29 +28,32 @@ librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
 ## Loading in the .csv files
 
 ```{r}
-secremp_temp_18_19 <- read_csv(
-  "C:/Users/Madison.Enda/Desktop/Temp_Data/SECREMP_Master_Files/temp_2018-2022/SE_Temperature_18-19.csv",
+secremp_temp_2022 <- read_csv(
+  "C:/Users/Madison.Enda/Desktop/Temp_Data/SECREMP_Master_Files/temp_2018-2022/SETEMP_2022.csv",
   locale = locale(encoding = "Latin1"),
   col_types = cols(Time = col_character())
 )
 ```
 
-The columns that we are looking to make in order to be standardized with the CREMP data are: - date - time - temp_C - temp_F - site - site_id - region - habitat - station - observation_id
+### Check data types
 
-First, let's convert our Year, Month, and Day columns into a date column!
+```{r}
+# Look at our data types using str()
+str(secremp_temp_2022)
+```
 
 ### Convert the date column to date data types
 
 ```{r}
 # Make the date column a date object
-secremp_temp_18_19$Date <- mdy(secremp_temp_18_19$Date)
+secremp_temp_2022$Date <- mdy(secremp_temp_2022$Date)
 ```
 
 ### Find strange date time formats
 
 ```{r}
 # Take a look at the SECREMP date patterns for 2019
-date_patterns <- secremp_temp_18_19 %>%
+date_patterns <- secremp_temp_2022 %>%
   mutate(
     date_pattern = gsub("[0-9]", "D", Date)
   ) %>%
@@ -61,11 +64,11 @@ date_patterns <- secremp_temp_18_19 %>%
 
 ```{r}
 # Look at the NA values in date
-NA_values <- secremp_temp_18_19 %>%
+NA_values <- secremp_temp_2022 %>%
   filter(is.na(Date))
 
 # Remove the NA values as they contained no data
-secremp_temp_18_19 <- secremp_temp_18_19 %>%
+secremp_temp_2022 <- secremp_temp_2022 %>%
   filter(!is.na(Date))
 ```
 
@@ -75,14 +78,14 @@ secremp_temp_18_19 <- secremp_temp_18_19 %>%
 
 ```{r}
 # Convert from character strings to time
-secremp_temp_18_19$time <- as.hms(secremp_temp_18_19$time)
+secremp_temp_2022$Time <- as.hms(secremp_temp_2022$Time)
 ```
 
 ### Create a temp_F column
 
 ```{r}
 # Convert the temp_C column to Fahrenheit
-secremp_temp_18_19 <- secremp_temp_18_19 %>%
+secremp_temp_2022 <- secremp_temp_2022 %>%
   mutate(temp_F = `Temp °C` * 1.8 + 32)
 ```
 
@@ -90,27 +93,27 @@ secremp_temp_18_19 <- secremp_temp_18_19 %>%
 
 ```{r}
 # Rename old columns to be snake case (`Temp C` to Temp_C)  
-secremp_temp_18_19 <- secremp_temp_18_19 %>%
+secremp_temp_2022 <- secremp_temp_2022 %>%
   rename(
     date = Date,
     time = Time,
-    site = Site,
+    site_code = `Site Code`,
     temp_C = `Temp °C`,
-    station_id = StationID
+    station_id = stationid
   )
 
 # Create a column called Observation_ID
-secremp_temp_18_19 <- secremp_temp_18_19 %>%
+secremp_temp_2022 <- secremp_temp_2022 %>%
   arrange(date) %>% # oldest → newest
   mutate(observation_id = row_number()) # oldest value gets ID = 1
 
 # Reorder the columns in the dataframe
-secremp_temp_18_19 <- secremp_temp_18_19 %>%
+secremp_temp_2022 <- secremp_temp_2022 %>%
   select(observation_id, date, time, temp_C, temp_F, everything())
 ```
 
 ```{r}
-colSums(is.na(secremp_temp_18_19))
+colSums(is.na(secremp_temp_2022))
 ```
 
 -   There doesn't appear to be any extremely high or low temperature observations, so we will leave it all for now! :)
@@ -119,5 +122,5 @@ colSums(is.na(secremp_temp_18_19))
 
 ```{r}
 # Write the final data frame to a csv in my current working directory
-write.csv(secremp_temp_18_19, "southeastern_florida_temp_2018_2019.csv", row.names = FALSE)
+write.csv(secremp_temp_2022, "csvs/southeastern_florida_temp_2021_2022.csv", row.names = FALSE)
 ```

@@ -54,7 +54,6 @@ str(secremp_temp_2021)
 secremp_temp_2021$Date <- mdy(secremp_temp_2021$Date)
 ```
 
-
 ### Change column names for standardization
 
 ```{r}
@@ -90,5 +89,3 @@ colSums(is.na(secremp_temp_2021))
 # Write the final data frame to a csv in my current working directory
 write.csv(secremp_temp_2021, "southeastern_florida_temp_2020_2021.csv", row.names = FALSE)
 ```
-
-
