@@ -1,0 +1,175 @@
+---
+title: "Southeastern_Florida_Temp_2025"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Southeastern Florida
+
+### Author- Madison Enda, February 12th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   This script cleans and formats the 2025 temperature data from the Southeastern Florida Coral Reef Evaluation and Monitoring Program (CREMP). This data comes to us courtesy of Nova Southeastern University, who trim the data sets to the appropriate deployment and retrieval dates for each site, each year, and submit files for all properly working loggers.
+
+- The CREMP database manager and analyst selects one of these loggers (typically logger 1), and appends them to the main SECREMP temperature master file.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
+```
+
+## Loading in the .csv files
+```{r}
+library(tidyverse)
+
+# 1. Define folder path
+folder_path <- "C:/Users/Madison.Enda/Desktop/Temp_Data/SECREMP_Master_Files/secremp_2025"
+
+# 2. List all CSV files
+files <- list.files(folder_path, pattern = "_corrected\\.csv$", full.names = TRUE)
+
+# 3. Make a lookup table for site names
+site_lookup <- tibble(
+  file_name = c(
+    "20423461_PB3-2_corrected.csv",
+    "20659442_PB4-1_corrected.csv",
+    "20659443_PB1-1_corrected.csv",
+    "20820764_DC8-1_corrected.csv",
+    "20880742_DC7-1_corrected.csv",
+    "21119666_BC4-1_corrected.csv",
+    "21119669_BC1-1_corrected.csv",
+    "21119670_PB5-1_corrected.csv",
+    "21119672_PB2-2_corrected.csv",
+    "21222725_DC5-1_corrected.csv",
+    "21222728_BC2-1_corrected.csv",
+    "21222733_BC3-1_corrected.csv",
+    "21222737_DC3-1_corrected.csv",
+    "21275331_DC2-1_corrected.csv",
+    "21550253_DC1-1_corrected.csv",
+    "21550256_MC1-1_corrected.csv",
+    "21550265_BC5-1_corrected.csv",
+    "21934075_DC4-1_corrected.csv",
+    "21975948_MC2-1_corrected.csv",
+    "21976118_BC6-1_corrected.csv",
+    "21976152_BCA-1_corrected.csv",
+    "22063544_DC6-1_corrected.csv"
+  ),
+  site_name = c(
+    "Palm Beach 3","Palm Beach 4","Palm Beach 1","Dade County 8","Dade County 7","Broward County 4","Broward County 1","Palm Beach 5","Palm Beach 2","Dade County 5","Broward County 2","Broward County 3","Dade County 3","Dade County 2","Dade County 1","Martin County 1",
+    "Broward County 5","Dade County 4","Martin County 2","Broward County 6","Broward County A","Dade County 6"
+  )
+)
+
+# 4. Read and process all files
+secremp_temp_2025 <- files %>%
+  set_names(basename(.)) %>%  # keep file names as names
+  map_dfr(~ read_csv(
+            .x,
+            locale = locale(encoding = "Latin1"),
+            col_types = cols(Time = col_character())
+          ) %>%
+          mutate(site_name = site_lookup$site_name[match(basename(.x), site_lookup$file_name)])
+        )
+```
+
+
+### Creating a date column
+
+```{r}
+# Convert the date column
+secremp_temp_2025$Date <- mdy(secremp_temp_2025$Date)
+```
+
+### Make the time column an hour in military format
+
+```{r}
+# Convert from character strings to time
+secremp_temp_2025$Time <- as.hms(secremp_temp_2025$Time)
+```
+
+### Create a Fahrenheit column
+```{r}
+# Convert the temp_C column to Fahrenheit
+secremp_temp_2025 <- secremp_temp_2025 %>%
+  mutate(temp_F = `Temp °C` * 1.8 + 32)
+```
+
+### Rename the columns
+
+```{r}
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
+secremp_temp_2025 <- secremp_temp_2025 %>%
+  rename(
+    date = Date,
+    time = Time,
+    temp_C = `Temp °C`,
+  )
+```
+
+### Assigning a primary key: observation_id
+
+```{r}
+# Create a column called Observation_ID
+secremp_temp_2025 <- secremp_temp_2025 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+
+# Reorder the columns in the dataframe
+secremp_temp_2025 <- secremp_temp_2025 %>%
+  select(observation_id, date, time, site_name, temp_C, temp_F)
+```
+
+
+### Bind together the master list with the new year's data
+
+```{r}
+# Read in the master list
+secremp_temp_2007_2024 <- read_csv("C:/Users/Madison.Enda/Desktop/Temp_Data/Temperature/Southeastern_Florida/southeastern_florida_temp_master.csv")
+
+# Join the data together
+secremp_temp_master <- bind_rows(secremp_temp_2007_2024, secremp_temp_2025)
+```
+
+### Filling in station_id and site_id
+
+```{r}
+# Look for where site_id and station_id are NA
+colSums(is.na(secremp_temp_master))
+
+# Group by site_name and fill in missing values
+secremp_temp_master <- secremp_temp_master %>%
+  group_by(site_name) %>%
+  mutate(
+    station_id = first(na.omit(station_id)),
+    site_id    = first(na.omit(site_id))
+  ) %>%
+  ungroup()
+```
+
+```{r}
+# Check to ensure that no sites have multiple id's
+check <- secremp_temp_master %>%
+  group_by(site_name) %>%
+  summarise(
+    n_station = n_distinct(station_id, na.rm = TRUE),
+    n_site    = n_distinct(site_id, na.rm = TRUE)
+  ) %>%
+  filter(n_station > 1 | n_site > 1) 
+# Note: Should yield no result!
+```
+
+### Write the file to our current directory
+
+```{r}
+
+```
+

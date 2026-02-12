@@ -1,0 +1,115 @@
+---
+title: "Southeastern_Florida_Temp_Deliverable"
+author: "Maddy Enda"
+format: html
+editor: visual
+---
+
+# Temperature Data 2026 Update: Southeastern Florida
+
+### Author- Madison Enda, February 12th, 2026
+
+### Contact- madison.enda\@myfwc.com
+
+## Overview:
+
+-   This script cleans and looks-over the previous SECREMP cumulative temperature deliverable. This data set has records from 2007-2024. Added to this master list will be the 2025 data.
+
+## Import Libraries
+
+```{r}
+# Install librarian for multiple packages and quick readability
+# install.packages("librarian")
+
+# Using librarian::shelf to import many libraries at once
+librarian::shelf(tidyverse, dplyr, here, readxl, purrr, hms, lubridate)
+```
+
+## Loading in the .csv files
+
+```{r}
+secremp_temp_2007_2024 <- read_csv("C:/Users/Madison.Enda/Desktop/SECREMP_Temperature_2007-2024.csv")
+```
+
+The columns that we are looking to make in order to be standardized with the CREMP data are: - date - time - temp_C - temp_F - site - site_id - region - habitat - station - observation_id
+
+First, let's convert our Year, Month, and Day columns into a date column!
+
+### Creating a date column
+
+```{r}
+# Make a date column from Year, Month, and Day
+secremp_temp_2007_2024$date <- make_date(secremp_temp_2007_2024$Year, secremp_temp_2007_2024$Month, secremp_temp_2007_2024$Day)
+
+# Remove the Year, Month, Day columns
+secremp_temp_2007_2024 <- secremp_temp_2007_2024 %>%
+  select(-c(Year, Month, Day))
+```
+
+### Make the time column an hour in military format
+
+```{r}
+# Convert to integer before applying time
+secremp_temp_2007_2024$Time <- as.integer(secremp_temp_2007_2024$Time)
+
+# Convert the integer to a hour
+secremp_temp_2007_2024$Time <- hms::hms(hours = secremp_temp_2007_2024$Time)
+```
+
+### Rename the columns
+
+```{r}
+# Rename old columns to be snake case (`Temp C` to Temp_C)  
+secremp_temp_2007_2024 <- secremp_temp_2007_2024 %>%
+  rename(
+    time = Time,
+    temp_C = TempC,
+    temp_F = TempF,
+    station_id = StationID,
+    site_id = SiteID,
+    site_name = SiteName
+  )
+```
+
+### Assigning a primary key: observation_id
+
+```{r}
+# Create a column called Observation_ID
+secremp_temp_2007_2024 <- secremp_temp_2007_2024 %>%
+  arrange(date) %>% # oldest → newest
+  mutate(observation_id = row_number()) # oldest value gets ID = 1
+
+# Reorder the columns in the dataframe
+secremp_temp_2007_2024 <- secremp_temp_2007_2024 %>%
+  select(observation_id, date, time, everything())
+```
+
+```{r}
+# There appears to be one observation where the temperature in Celsius is missing which is odd, considering we calculate Fahrenheit from Celcius typically.
+no_C <- secremp_temp_2007_2024 %>%
+filter(is.na(secremp_temp_2007_2024$temp_C))
+
+# The associated observation is extremely cold, so I believe that we should remove this observation
+# Let's check Broward county 5 in July of 2024. It is possible that the value in Fahrenheit is meant to be recorded in Celsius, but I want to be sure before changing it.
+july_broward_county_5 <- secremp_temp_2007_2024 %>%
+  filter(site_name == "Broward County 5" & date == '2024-07-27')
+```
+
+### Filter out erroneous data:
+
+The temperature around 2024-07-27 did not get up to 32 degrees C, or about 80 degrees Fahrenheit, according to the surrounding values. A quick logger check shows that there were was a gap in recording during that time. This observation will be removed
+
+```{r}
+# Remove the odd freezing values
+secremp_temp_2007_2024 <- secremp_temp_2007_2024 %>%
+  filter(temp_F > 32)
+```
+
+### Write the final file
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(secremp_temp_2007_2024, "southeastern_florida_temp_master.csv", row.names = FALSE)
+```
+
+
+
