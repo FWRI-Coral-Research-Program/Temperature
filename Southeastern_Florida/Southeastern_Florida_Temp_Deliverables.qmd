@@ -105,11 +105,30 @@ secremp_temp_2007_2024 <- secremp_temp_2007_2024 %>%
   filter(temp_F > 32)
 ```
 
-### Write the final file
+### Add any extra rows that may be requried (Habitat)
+
 ```{r}
-# Write the final data frame to a csv in my current working directory
-write.csv(secremp_temp_2007_2024, "southeastern_florida_temp_master.csv", row.names = FALSE)
+# Create df with only habitat and site_id
+joining_df <- southeastern_florida_2007_2017 %>%
+  select(site_id, habitat) %>%
+  distinct()
+
+# Remove the typo at site 91
+joining_df <- joining_df %>%
+  filter(habitat != "First Reef")
+
+# Left join the habitat column with the southeastern_florida_master_2025
+updated_secremp_master <- southeastern_florida_master_2025 %>%
+  left_join(
+  joining_df %>%
+    select(site_id, habitat),
+  by = "site_id")
 ```
 
+### Write the final file
 
+```{r}
+# Write the final data frame to a csv in my current working directory
+write.csv(updated_secremp_master, "southeastern_florida_master_2025.csv", row.names = FALSE)
+```
 
